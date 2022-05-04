@@ -2,7 +2,7 @@
 
 **This code has not been audited. Use at your own risk.**
 
-This implementation aims to target small non-Groth16 powers of tau ceremonies. It is advised to only use this implementation, if your ceremony is less than 2^18 or if your computer is powerful.
+This implementation aims to target small non-Groth16 powers of tau ceremonies.
 
 ## Performance
 
@@ -105,3 +105,13 @@ These are the actors who want to either check that their contributions were incl
 
     // If position is None/Nil then your contribution was not included. Else the position of your contribution will be returned.
 ````
+
+## License 
+
+This project is distributed under a dual license. (MIT/APACHE)
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this crate by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+
+## Status
+
+This project is a work in progress.
