@@ -72,6 +72,51 @@ impl Accumulator {
         }
     }
 
+    // Verify whether the transition from one SRS to the other was valid
+    //
+    // Most of the time, there will be a single update proof for verifying that a contribution did indeed update the SRS correctly.
+    //
+    // After the ceremony is over, one may use this method to check all update proofs that were given in the ceremony
+    pub fn verify_update(
+        before: &Accumulator,
+        after: &Accumulator,
+        update_proofs: &[UpdateProof],
+    ) -> bool {
+        let first_update = update_proofs.first().expect("expected at least one update");
+        let last_update = update_proofs.last().expect("expected at least one update");
+
+        // 1a. Check that the updates started from the starting SRS
+        if before.tau_g1[1] != first_update.previous_accumulated_point {
+            return false;
+        }
+        // 1b.Check that the updates finished at the ending SRS
+        if after.tau_g1[1] != last_update.new_accumulated_point {
+            return false;
+        }
+
+        // 2. Check the update proofs are correct and form a chain of updates
+        if !UpdateProof::verify_chain(update_proofs) {
+            return false;
+        }
+
+        // 3. Check that the degree-0 component is not the identity element
+        // No need to check the other elements because the structure check will fail
+        // if they are also not the identity element
+        if after.tau_g1[0].is_zero() {
+            return false;
+        }
+        if after.tau_g2[0].is_zero() {
+            return false;
+        }
+
+        // 3. Check that the new SRS goes up in incremental powers
+        if !after.structure_check() {
+            return false;
+        }
+
+        true
+    }
+
     // Inefficiently checks that the srs has the correct structure
     // Meaning each subsequent element is increasing the index of tau for both G_1 and G_2 elements
     fn structure_check(&self) -> bool {
