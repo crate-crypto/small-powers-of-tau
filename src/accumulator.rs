@@ -153,3 +153,55 @@ impl Accumulator {
         true
     }
 }
+
+#[test]
+fn reject_private_key_one() {
+    // This test ensures that one cannot update the SRS using either 0 or 1
+
+    let before = Accumulator::new_for_kzg(100);
+    let mut after = before.clone();
+
+    let secret = PrivateKey::from(1u64);
+    let update_proof = after.update(secret);
+
+    assert!(!Accumulator::verify_update(&before, &after, update_proof));
+}
+#[test]
+fn reject_private_key_zero() {
+    // This test ensures that one cannot update the SRS using either 0 or 1
+
+    let before = Accumulator::new_for_kzg(100);
+    let mut after = before.clone();
+
+    let secret = PrivateKey::from(0u64);
+    let update_proof = after.update(secret);
+
+    assert!(!Accumulator::verify_update(&before, &after, update_proof));
+}
+
+#[test]
+fn acc_fuzz() {
+    let secret_a = PrivateKey::from(252u64);
+    let secret_b = PrivateKey::from(512u64);
+    let secret_c = PrivateKey::from(789u64);
+
+    let mut acc = Accumulator::new_for_kzg(100);
+
+    // Simulate 3 participants updating the accumulator, one after the other
+    let update_proof_1 = acc.update(secret_a);
+    let update_proof_2 = acc.update(secret_b);
+    let update_proof_3 = acc.update(secret_c);
+
+    // This verifies each update proof makes the correct transition, but it does not link
+    // the update proofs, so these could in theory be updates to different accumulators
+    assert!(update_proof_1.verify());
+    assert!(update_proof_2.verify());
+    assert!(update_proof_3.verify());
+
+    // Here we also verify the chain, if elements in the vector are out of place, the proof will also fail
+    assert!(UpdateProof::verify_chain(&[
+        update_proof_1,
+        update_proof_2,
+        update_proof_3,
+    ]));
+}
