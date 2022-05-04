@@ -2,12 +2,11 @@
 
 **This code has not been auditted. Use at your own risk**
 
-This projects aims to implement a small non-Groth16 powers of tau ceremony. It is advised to only use this implementation, if your ceremony is less than $2^18$.
+This projects aims to implement a small non-Groth16 powers of tau ceremony. It is advised to only use this implementation, if your ceremony is less than 2^18 or if your computer is powerful.
 
 ## Performance
 
-- No optimisations have been added, so the code will most likely be very slow. This includes adding rayon and swapping many pairings checks for multi exponentiations.
-
+- No optimisations have been added, so the code will most likely be very slow. This includes adding rayon and swapping many pairings checks for multi exponentiations and a single pairing check.
 ## Usage
 
 Below we show different uses of the API depending on the actor.
