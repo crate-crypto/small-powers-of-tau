@@ -1,4 +1,5 @@
-mod accumulator;
+pub mod accumulator;
 pub mod keypair;
+mod serialisation;
 mod shared_secret;
-mod update_proof;
+pub mod update_proof;
