@@ -2,6 +2,8 @@ use ark_bn254::{Fr, G1Affine, G2Affine};
 use ark_ec::{AffineCurve, PairingEngine};
 use ark_ff::{Field, PrimeField, Zero};
 
+use crate::{keypair::PrivateKey, update_proof::UpdateProof};
+
 #[derive(Debug, Clone)]
 pub struct Accumulator {
     pub(crate) tau_g1: Vec<G1Affine>,
@@ -38,6 +40,20 @@ impl Accumulator {
 
         Accumulator::new(params)
     }
+
+        // Updates the accumulator and produces a proof of this update
+        pub fn update(&mut self, private_key: PrivateKey) -> UpdateProof {
+            // Save the previous s*G_1 element, then update the accumulator and save the new s*private_key*G_1 element
+            let previous_tau = self.tau_g1[1].into_projective();
+            self.update_accumulator(private_key.tau);
+            let updated_tau = self.tau_g1[1].into_projective();
+    
+            UpdateProof {
+                commitment_to_secret: private_key.to_public(),
+                previous_accumulated_point: previous_tau,
+                new_accumulated_point: updated_tau,
+            }
+        }
 
         // Inefficiently, updates the group elements using a users private key
         fn update_accumulator(&mut self, private_key: Fr) {
