@@ -2,10 +2,10 @@ use ark_bn254::{Fr, G1Projective, G2Affine, G2Projective};
 use ark_ec::{AffineCurve, PairingEngine, ProjectiveCurve};
 use ark_ff::PrimeField;
 
-// An shared secret proof proves that a point was necessarily created by multiplying the discrete log of a series of previous points
+// A shared secret proof proves that a point was necessarily created by multiplying the discrete log of a series of previous points
 //
 // For example; Given the point P = (a * b * c) G_1
-// An extension proof is capable of proving that P was created in four steps:
+// An shared secret proof is capable of proving that P was created in four steps:
 // 1 * G_1 -> a * G_1 -> (a * b) * G_1 -> (a * b * c) * G_1
 
 pub struct SharedSecretChain {
@@ -70,15 +70,15 @@ impl SharedSecretChain {
 }
 
 #[test]
-fn ext_fuzz() {
+fn shared_secret_fuzz() {
     let witness_a = Fr::from(100u64);
     let witness_b = Fr::from(200u64);
     let witness_c = Fr::from(300u64);
 
-    let mut ext_p = SharedSecretChain::new();
-    ext_p.accumulate(witness_a);
-    ext_p.accumulate(witness_b);
-    ext_p.accumulate(witness_c);
+    let mut product_chain = SharedSecretChain::new();
+    product_chain.accumulate(witness_a);
+    product_chain.accumulate(witness_b);
+    product_chain.accumulate(witness_c);
 
-    assert!(ext_p.verify())
+    assert!(product_chain.verify())
 }
