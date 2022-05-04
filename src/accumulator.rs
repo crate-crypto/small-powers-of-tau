@@ -77,7 +77,8 @@ impl Accumulator {
     // Most of the time, there will be a single update proof for verifying that a contribution did indeed update the SRS correctly.
     //
     // After the ceremony is over, one may use this method to check all update proofs that were given in the ceremony
-    pub fn verify_update(
+    pub fn verify_updates(
+        // TODO: We do not _need_ the whole `before` accumulator, this API is just a bit cleaner
         before: &Accumulator,
         after: &Accumulator,
         update_proofs: &[UpdateProof],
@@ -115,6 +116,14 @@ impl Accumulator {
         }
 
         true
+    }
+
+    pub fn verify_update(
+        before: &Accumulator,
+        after: &Accumulator,
+        update_proof: &UpdateProof,
+    ) -> bool {
+        Accumulator::verify_updates(before, after, &[*update_proof])
     }
 
     // Inefficiently checks that the srs has the correct structure
@@ -161,10 +170,10 @@ fn reject_private_key_one() {
     let before = Accumulator::new_for_kzg(100);
     let mut after = before.clone();
 
-    let secret = PrivateKey::from(1u64);
+    let secret = PrivateKey::from_u64(1);
     let update_proof = after.update(secret);
 
-    assert!(!Accumulator::verify_update(&before, &after, update_proof));
+    assert!(!Accumulator::verify_update(&before, &after, &update_proof));
 }
 #[test]
 fn reject_private_key_zero() {
@@ -173,17 +182,17 @@ fn reject_private_key_zero() {
     let before = Accumulator::new_for_kzg(100);
     let mut after = before.clone();
 
-    let secret = PrivateKey::from(0u64);
+    let secret = PrivateKey::from_u64(0);
     let update_proof = after.update(secret);
 
-    assert!(!Accumulator::verify_update(&before, &after, update_proof));
+    assert!(!Accumulator::verify_update(&before, &after, &update_proof));
 }
 
 #[test]
 fn acc_fuzz() {
-    let secret_a = PrivateKey::from(252u64);
-    let secret_b = PrivateKey::from(512u64);
-    let secret_c = PrivateKey::from(789u64);
+    let secret_a = PrivateKey::from_u64(252);
+    let secret_b = PrivateKey::from_u64(512);
+    let secret_c = PrivateKey::from_u64(789);
 
     let mut acc = Accumulator::new_for_kzg(100);
 

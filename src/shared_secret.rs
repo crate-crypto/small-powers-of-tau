@@ -41,6 +41,7 @@ impl SharedSecretChain {
     }
 
     // Uses a secret to extend extend a shared secret chain
+    #[cfg(test)]
     pub fn accumulate(&mut self, scalar: Fr) {
         let gen_g2 = G2Affine::prime_subgroup_generator();
 

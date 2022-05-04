@@ -130,7 +130,7 @@ mod tests {
             num_g2_elements_needed: 25,
         };
 
-        let secret = PrivateKey::from(5687u64);
+        let secret = PrivateKey::from_u64(5687);
         let mut acc = Accumulator::new(params);
         acc.update(secret);
 
