@@ -18,6 +18,7 @@ pub struct UpdateProof {
 }
 
 impl UpdateProof {
+    #[cfg(test)]
     pub(crate) fn verify(&self) -> bool {
         // Check if update proof is valid
         if !self.is_valid() {
