@@ -41,35 +41,34 @@ impl Accumulator {
         Accumulator::new(params)
     }
 
-        // Updates the accumulator and produces a proof of this update
-        pub fn update(&mut self, private_key: PrivateKey) -> UpdateProof {
-            // Save the previous s*G_1 element, then update the accumulator and save the new s*private_key*G_1 element
-            let previous_tau = self.tau_g1[1].into_projective();
-            self.update_accumulator(private_key.tau);
-            let updated_tau = self.tau_g1[1].into_projective();
-    
-            UpdateProof {
-                commitment_to_secret: private_key.to_public(),
-                previous_accumulated_point: previous_tau,
-                new_accumulated_point: updated_tau,
-            }
-        }
+    // Updates the accumulator and produces a proof of this update
+    pub fn update(&mut self, private_key: PrivateKey) -> UpdateProof {
+        // Save the previous s*G_1 element, then update the accumulator and save the new s*private_key*G_1 element
+        let previous_tau = self.tau_g1[1].into_projective();
+        self.update_accumulator(private_key.tau);
+        let updated_tau = self.tau_g1[1].into_projective();
 
-        // Inefficiently, updates the group elements using a users private key
-        fn update_accumulator(&mut self, private_key: Fr) {
-            // TODO use rayon
-            for (i, tg1) in self.tau_g1.iter_mut().enumerate() {
-                let exponent: Fr = (i as u64).into();
-                let tau_pow = private_key.pow(exponent.into_repr());
-    
-                *tg1 = tg1.mul(tau_pow.into_repr()).into();
-            }
-            for (i, tg2) in self.tau_g2.iter_mut().enumerate() {
-                let exponent: Fr = (i as u64).into();
-                let tau_pow = private_key.pow(exponent.into_repr());
-    
-                *tg2 = tg2.mul(tau_pow.into_repr()).into();
-            }
+        UpdateProof {
+            commitment_to_secret: private_key.to_public(),
+            previous_accumulated_point: previous_tau,
+            new_accumulated_point: updated_tau,
         }
+    }
 
+    // Inefficiently, updates the group elements using a users private key
+    fn update_accumulator(&mut self, private_key: Fr) {
+        // TODO use rayon
+        for (i, tg1) in self.tau_g1.iter_mut().enumerate() {
+            let exponent: Fr = (i as u64).into();
+            let tau_pow = private_key.pow(exponent.into_repr());
+
+            *tg1 = tg1.mul(tau_pow.into_repr()).into();
+        }
+        for (i, tg2) in self.tau_g2.iter_mut().enumerate() {
+            let exponent: Fr = (i as u64).into();
+            let tau_pow = private_key.pow(exponent.into_repr());
+
+            *tg2 = tg2.mul(tau_pow.into_repr()).into();
+        }
+    }
 }

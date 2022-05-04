@@ -20,7 +20,10 @@ impl SharedSecretChain {
     }
 
     pub fn starting_from(starting_point: G1Projective) -> Self {
-        Self { accumulated_points: vec![starting_point], witnesses: vec![] }
+        Self {
+            accumulated_points: vec![starting_point],
+            witnesses: vec![],
+        }
     }
 
     pub fn last_accumulated_point(&self) -> G1Projective {

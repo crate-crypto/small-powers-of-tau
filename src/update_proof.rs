@@ -62,7 +62,10 @@ impl UpdateProof {
 
             // Add the new accumulated point into the chain along with a witness that attests to the
             // transition from the previous point to it.
-            chain.extend(update_proof.new_accumulated_point, update_proof.commitment_to_secret);
+            chain.extend(
+                update_proof.new_accumulated_point,
+                update_proof.commitment_to_secret,
+            );
         }
 
         chain.verify()
