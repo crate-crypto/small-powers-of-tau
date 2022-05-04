@@ -1,2 +1,2 @@
-mod keypair;
-
+pub mod keypair;
+mod shared_secret;
