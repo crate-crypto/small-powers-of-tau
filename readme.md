@@ -4,6 +4,10 @@
 
 This projects aims to implement a small non-Groth16 powers of tau ceremony. It is advised to only use this implementation, if your ceremony is less than $2^18$.
 
+## Performance
+
+- No optimisations have been added, so the code will most likely be very slow. This includes adding rayon and swapping many pairings checks for multi exponentiations.
+
 ## Usage
 
 Below we show different uses of the API depending on the actor.
@@ -96,7 +100,7 @@ These are the actors who want to either check that their contributions were incl
     // Now lets assume that I have contributed to the ceremony and I want to verify tht my contribution was included.
     // I should have a public key that was included in my update proof
     let public_key = //
-    
+
     let (valid_updates, position) = Ceremony::verify_and_find_contribution(starting_srs, final_srs, update_proofs, public_key);
 
     // If position is None/Nil then your contribution was not included. Else the position of your contribution will be returned.
