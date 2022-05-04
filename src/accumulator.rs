@@ -71,4 +71,40 @@ impl Accumulator {
             *tg2 = tg2.mul(tau_pow.into_repr()).into();
         }
     }
+
+    // Inefficiently checks that the srs has the correct structure
+    // Meaning each subsequent element is increasing the index of tau for both G_1 and G_2 elements
+    fn structure_check(&self) -> bool {
+        let tau_g2_0 = self.tau_g2[0];
+        let tau_g2_1 = self.tau_g2[1];
+
+        let tau_g1_0 = self.tau_g1[0];
+        let tau_g1_1 = self.tau_g1[1];
+
+        // Check G_1 elements
+        let power_pairs = self.tau_g1.as_slice().windows(2);
+        for pair in power_pairs {
+            let tau_i = pair[0]; // tau^i
+            let tau_i_next = pair[1]; // tau^{i+1}
+            let p1 = ark_bn254::Bn254::pairing(tau_i_next, tau_g2_0);
+            let p2 = ark_bn254::Bn254::pairing(tau_i, tau_g2_1);
+            if p1 != p2 {
+                return false;
+            }
+        }
+
+        // Check G_2 elements
+        let power_pairs = self.tau_g2.as_slice().windows(2);
+        for pair in power_pairs {
+            let tau_i = pair[0]; // tau^i
+            let tau_i_next = pair[1]; // tau^{i+1}
+            let p1 = ark_bn254::Bn254::pairing(tau_g1_0, tau_i_next);
+            let p2 = ark_bn254::Bn254::pairing(tau_g1_1, tau_i);
+            if p1 != p2 {
+                return false;
+            }
+        }
+
+        true
+    }
 }
