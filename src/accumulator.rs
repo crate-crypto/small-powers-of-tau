@@ -58,18 +58,25 @@ impl Accumulator {
     // Inefficiently, updates the group elements using a users private key
     fn update_accumulator(&mut self, private_key: Fr) {
         use rayon::prelude::*;
-        self.tau_g1.par_iter_mut().enumerate().for_each(|(i, tg1)| {
-            let exponent: Fr = (i as u64).into();
-            let tau_pow = private_key.pow(exponent.into_repr());
 
-            *tg1 = tg1.mul(tau_pow.into_repr()).into();
-        });
-        self.tau_g2.par_iter_mut().enumerate().for_each(|(i, tg2)| {
-            let exponent: Fr = (i as u64).into();
-            let tau_pow = private_key.pow(exponent.into_repr());
+        let max_number_elements = std::cmp::max(self.tau_g1.len(), self.tau_g2.len());
 
-            *tg2 = tg2.mul(tau_pow.into_repr()).into();
-        })
+        let k = vandemonde_challenge(private_key, max_number_elements);
+
+        self.tau_g1
+            .par_iter_mut()
+            .skip(1)
+            .zip(&k)
+            .for_each(|(tg1, priv_pow)| {
+                *tg1 = tg1.mul(priv_pow.into_repr()).into();
+            });
+        self.tau_g2
+            .par_iter_mut()
+            .skip(1)
+            .zip(&k)
+            .for_each(|(tg2, priv_pow)| {
+                *tg2 = tg2.mul(priv_pow.into_repr()).into();
+            })
     }
 
     // Verify whether the transition from one SRS to the other was valid
@@ -161,6 +168,15 @@ impl Accumulator {
 
         true
     }
+}
+
+fn vandemonde_challenge(mut x: Fr, n: usize) -> Vec<Fr> {
+    let mut challenges: Vec<Fr> = Vec::with_capacity(n);
+    challenges.push(x);
+    for i in 0..n - 1 {
+        challenges.push(challenges[i] * x);
+    }
+    challenges
 }
 
 #[test]
