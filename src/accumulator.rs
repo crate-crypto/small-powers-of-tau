@@ -57,19 +57,19 @@ impl Accumulator {
 
     // Inefficiently, updates the group elements using a users private key
     fn update_accumulator(&mut self, private_key: Fr) {
-        // TODO use rayon
-        for (i, tg1) in self.tau_g1.iter_mut().enumerate() {
+        use rayon::prelude::*;
+        self.tau_g1.par_iter_mut().enumerate().for_each(|(i, tg1)| {
             let exponent: Fr = (i as u64).into();
             let tau_pow = private_key.pow(exponent.into_repr());
 
             *tg1 = tg1.mul(tau_pow.into_repr()).into();
-        }
-        for (i, tg2) in self.tau_g2.iter_mut().enumerate() {
+        });
+        self.tau_g2.par_iter_mut().enumerate().for_each(|(i, tg2)| {
             let exponent: Fr = (i as u64).into();
             let tau_pow = private_key.pow(exponent.into_repr());
 
             *tg2 = tg2.mul(tau_pow.into_repr()).into();
-        }
+        })
     }
 
     // Verify whether the transition from one SRS to the other was valid
