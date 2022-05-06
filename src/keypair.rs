@@ -16,8 +16,10 @@ impl PrivateKey {
         Self { tau: Fr::from(int) }
     }
     // Creates a private key using entropy from a RNG
-    pub fn rand<R: Rng>(mut rand: R) {
-        Fr::rand(&mut rand);
+    pub fn rand<R: Rng>(mut rand: R) -> Self {
+        PrivateKey {
+            tau: Fr::rand(&mut rand),
+        }
     }
 }
 
