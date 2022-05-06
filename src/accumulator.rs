@@ -11,8 +11,8 @@ pub struct Accumulator {
 }
 #[derive(Debug, Clone, Copy)]
 pub struct Parameters {
-    pub(crate) num_g1_elements_needed: usize,
-    pub(crate) num_g2_elements_needed: usize,
+    pub num_g1_elements_needed: usize,
+    pub num_g2_elements_needed: usize,
 }
 impl Accumulator {
     // Creates a powers of tau ceremony.
