@@ -17,11 +17,16 @@ ark-ec = { version = "0.3", default-features = false }
 ark-serialize = { version = "0.3", default-features = false }
 ark-poly = { version = "^0.3.0", default-features = false }
 ark-ff = { version = "^0.3.0", default-features = false }
-ark-bn254 = "^0.3.0"
+ark-bls12-381 = "^0.3.0"
 ark-std = "^0.3.0"
-zeroize = {version ="*", features = ["zeroize_derive"]}
+zeroize = { version = "*", features = ["zeroize_derive"] }
 
 [dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "benchmark"
+harness = false
 
 [features]
 default = ["parallel", "asm"]
