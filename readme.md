@@ -31,8 +31,8 @@ In order to contribute to a ceremony, you need to:
     let bytes = // Assuming you received the most recent SRS as a bytes
     
     // Deserialise the bytes received to create the SRS
-    // This method will ensure that the points are in the correct group and that none of the points are zero
-    let mut srs = Accumulator::deserialise(bytes, params);
+    // This method will ensure that the first points is in the correct group and that none of the points are zero
+    let mut srs = Accumulator::deserialise(bytes, params, SubgroupCheck::Partial);
 
     // Create your private key
     let private_key = PrivateKey::rand(rng);
@@ -68,7 +68,7 @@ The workflow is as follows:
 
     // Deserialise the bytes received to create the SRS
     // This method will ensure that the points are in the correct group and that none of the points are zero
-    let mut srs_new = Accumulator::deserialise(bytes, params);
+    let mut srs_new = Accumulator::deserialise(bytes, params, SubgroupCheck::Full);
     // Deserialise the update proof
     let update_proof = UpdateProof::deserialise(bytes)
 
@@ -91,7 +91,7 @@ These are the actors who want to either check that their contributions were incl
     let bytes = // Assuming you downloaded the starting SRS, the final SRS and the update proofs from some storage location
 
     let starting_srs = Accumulator::deserialise(bytes, params);
-    let final_srs = Accumulator::deserialise(bytes, params);
+    let final_srs = Accumulator::deserialise(bytes, params, SubgroupCheck::Full);
     let update_proofs = //
 
     // Verify that these update proofs indeed do correspond to the transition from the starting SRS to the final SRS
