@@ -1,4 +1,4 @@
-use ark_bn254::{Fr, G1Projective, G2Affine, G2Projective};
+use ark_bls12_381::{Fr, G1Projective, G2Affine, G2Projective};
 use ark_ec::{AffineCurve, PairingEngine, ProjectiveCurve};
 use ark_ff::PrimeField;
 
@@ -63,8 +63,8 @@ impl SharedSecretChain {
         for (acc_pair, witness) in acc_pairs.zip(&self.witnesses) {
             let prev_acc = acc_pair[0];
             let next_acc = acc_pair[1];
-            let p1 = ark_bn254::Bn254::pairing(next_acc, gen_g2);
-            let p2 = ark_bn254::Bn254::pairing(prev_acc, *witness);
+            let p1 = ark_bls12_381::Bls12_381::pairing(next_acc, gen_g2);
+            let p2 = ark_bls12_381::Bls12_381::pairing(prev_acc, *witness);
             if p1 != p2 {
                 return false;
             }

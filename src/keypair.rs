@@ -1,4 +1,4 @@
-use ark_bn254::{Fr, G2Projective};
+use ark_bls12_381::{Fr, G2Projective};
 use ark_ec::ProjectiveCurve;
 use ark_ff::{PrimeField, UniformRand};
 use rand::Rng;

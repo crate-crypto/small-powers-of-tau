@@ -3,7 +3,7 @@
 // - `p` was used to update an existing point A to a new point A'
 
 use crate::shared_secret::SharedSecretChain;
-use ark_bn254::{G1Projective, G2Projective};
+use ark_bls12_381::{G1Projective, G2Projective};
 use ark_ec::ProjectiveCurve;
 use ark_ff::Zero;
 

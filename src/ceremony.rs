@@ -1,7 +1,7 @@
 // This file contains method to check the ceremony after it has been completed.
 //
 use crate::{accumulator::Accumulator, update_proof::UpdateProof};
-use ark_bn254::G2Projective;
+use ark_bls12_381::G2Projective;
 
 pub struct Ceremony;
 
