@@ -1,13 +1,13 @@
-use ark_bn254::{Fr, G1Affine, G2Affine};
-use ark_ec::{AffineCurve, PairingEngine};
+use ark_bls12_381::{Fr, G1Affine, G1Projective, G2Affine, G2Projective};
+use ark_ec::{AffineCurve, PairingEngine, ProjectiveCurve};
 use ark_ff::{Field, PrimeField, Zero};
 
 use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 
 #[derive(Debug, Clone)]
 pub struct Accumulator {
-    pub(crate) tau_g1: Vec<G1Affine>,
-    pub(crate) tau_g2: Vec<G2Affine>,
+    pub(crate) tau_g1: Vec<G1Projective>,
+    pub(crate) tau_g2: Vec<G2Projective>,
 }
 #[derive(Debug, Clone, Copy)]
 pub struct Parameters {
@@ -19,8 +19,14 @@ impl Accumulator {
     // This is not compatible with the BGM17 Groth16 powers of tau ceremony (notice there is no \alpha, \beta)
     pub fn new(parameters: Parameters) -> Accumulator {
         Self {
-            tau_g1: vec![G1Affine::prime_subgroup_generator(); parameters.num_g1_elements_needed],
-            tau_g2: vec![G2Affine::prime_subgroup_generator(); parameters.num_g2_elements_needed],
+            tau_g1: vec![
+                G1Projective::prime_subgroup_generator();
+                parameters.num_g1_elements_needed
+            ],
+            tau_g2: vec![
+                G2Projective::prime_subgroup_generator();
+                parameters.num_g2_elements_needed
+            ],
         }
     }
 
@@ -44,9 +50,9 @@ impl Accumulator {
     // Updates the accumulator and produces a proof of this update
     pub fn update(&mut self, private_key: PrivateKey) -> UpdateProof {
         // Save the previous s*G_1 element, then update the accumulator and save the new s*private_key*G_1 element
-        let previous_tau = self.tau_g1[1].into_projective();
+        let previous_tau = self.tau_g1[1];
         self.update_accumulator(private_key.tau);
-        let updated_tau = self.tau_g1[1].into_projective();
+        let updated_tau = self.tau_g1[1];
 
         UpdateProof {
             commitment_to_secret: private_key.to_public(),
@@ -57,25 +63,29 @@ impl Accumulator {
 
     // Inefficiently, updates the group elements using a users private key
     fn update_accumulator(&mut self, private_key: Fr) {
+        use ark_ec::wnaf::WnafContext;
         use rayon::prelude::*;
 
         let max_number_elements = std::cmp::max(self.tau_g1.len(), self.tau_g2.len());
 
-        let k = vandemonde_challenge(private_key, max_number_elements);
+        let powers_of_priv_key = vandemonde_challenge(private_key, max_number_elements);
+
+        let wnaf = WnafContext::new(3);
 
         self.tau_g1
             .par_iter_mut()
             .skip(1)
-            .zip(&k)
+            .zip(&powers_of_priv_key)
             .for_each(|(tg1, priv_pow)| {
-                *tg1 = tg1.mul(priv_pow.into_repr()).into();
+                *tg1 = wnaf.mul(*tg1, priv_pow);
             });
+
         self.tau_g2
             .par_iter_mut()
             .skip(1)
-            .zip(&k)
+            .zip(&powers_of_priv_key)
             .for_each(|(tg2, priv_pow)| {
-                *tg2 = tg2.mul(priv_pow.into_repr()).into();
+                *tg2 = wnaf.mul(*tg2, priv_pow);
             })
     }
 
@@ -147,8 +157,8 @@ impl Accumulator {
         for pair in power_pairs {
             let tau_i = pair[0]; // tau^i
             let tau_i_next = pair[1]; // tau^{i+1}
-            let p1 = ark_bn254::Bn254::pairing(tau_i_next, tau_g2_0);
-            let p2 = ark_bn254::Bn254::pairing(tau_i, tau_g2_1);
+            let p1 = ark_bls12_381::Bls12_381::pairing(tau_i_next, tau_g2_0);
+            let p2 = ark_bls12_381::Bls12_381::pairing(tau_i, tau_g2_1);
             if p1 != p2 {
                 return false;
             }
@@ -159,8 +169,8 @@ impl Accumulator {
         for pair in power_pairs {
             let tau_i = pair[0]; // tau^i
             let tau_i_next = pair[1]; // tau^{i+1}
-            let p1 = ark_bn254::Bn254::pairing(tau_g1_0, tau_i_next);
-            let p2 = ark_bn254::Bn254::pairing(tau_g1_1, tau_i);
+            let p1 = ark_bls12_381::Bls12_381::pairing(tau_g1_0, tau_i_next);
+            let p2 = ark_bls12_381::Bls12_381::pairing(tau_g1_1, tau_i);
             if p1 != p2 {
                 return false;
             }
@@ -170,7 +180,7 @@ impl Accumulator {
     }
 }
 
-fn vandemonde_challenge(mut x: Fr, n: usize) -> Vec<Fr> {
+fn vandemonde_challenge(x: Fr, n: usize) -> Vec<Fr> {
     let mut challenges: Vec<Fr> = Vec::with_capacity(n);
     challenges.push(x);
     for i in 0..n - 1 {
