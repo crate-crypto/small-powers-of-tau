@@ -194,7 +194,7 @@ pub fn serialize_g2(p: &G2Affine) -> [u8; G2_SERIALISED_SIZE] {
     result
 }
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use ark_ec::AffineCurve;
     #[test]

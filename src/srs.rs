@@ -1,6 +1,6 @@
 use ark_bls12_381::{Fr, G1Projective, G2Projective};
 use ark_ec::{PairingEngine, ProjectiveCurve};
-use ark_ff::{Field, One, PrimeField, Zero};
+use ark_ff::Zero;
 
 use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 
@@ -158,7 +158,7 @@ impl SRS {
             }
         }
 
-        return true;
+        true
     }
 
     // Verify that a single update was applied to transition `before` to `after`
@@ -214,84 +214,89 @@ fn vandemonde_challenge(x: Fr, n: usize) -> Vec<Fr> {
     challenges
 }
 
-#[test]
-fn reject_private_key_zero() {
-    // This test ensures that one cannot update the SRS using 0
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_ff::{Field, One, PrimeField};
+    #[test]
+    fn reject_private_key_zero() {
+        // This test ensures that one cannot update the SRS using 0
 
-    let before = SRS::new_for_kzg(100);
-    let mut after = before.clone();
+        let before = SRS::new_for_kzg(100);
+        let mut after = before.clone();
 
-    let secret = PrivateKey::from_u64(0);
-    let update_proof = after.update(secret);
+        let secret = PrivateKey::from_u64(0);
+        let update_proof = after.update(secret);
 
-    assert!(!SRS::verify_update(&before, &after, &update_proof));
-}
-#[test]
-fn zero_pow_zero() {
-    // This test checks that 0^0  = 1
-    // This can only happen if a user decides to use 0 as their private key
-    // which is rejected anyways. This is only needed for tests.
-    //
-    // Note that in the wnaf update method, we do not modify the degree-0 element
-    // which has the same effect when 0^0 = 1
-    let secret = PrivateKey::from_u64(0);
-    let value = secret.tau.pow(&[0]);
-
-    assert!(value.is_one())
-}
-
-#[test]
-fn update_works() {
-    // This test ensures that when we update the SRS, it is being updated
-    // correctly
-
-    let mut got_srs = SRS::new_for_kzg(100);
-    let mut expected_srs = got_srs.clone();
-
-    let secret = PrivateKey::from_u64(123456789);
-    let secret_fr = secret.tau.clone();
-
-    got_srs.update(secret);
-
-    for (index, tg1) in expected_srs.tau_g1.iter_mut().enumerate() {
-        let secret_pow_i = secret_fr.pow(&[index as u64]);
-        *tg1 = tg1.mul(secret_pow_i.into_repr())
+        assert!(!SRS::verify_update(&before, &after, &update_proof));
     }
-    for (index, tg2) in expected_srs.tau_g2.iter_mut().enumerate() {
-        let secret_pow_i = secret_fr.pow(&[index as u64]);
-        *tg2 = tg2.mul(secret_pow_i.into_repr())
+    #[test]
+    fn zero_pow_zero() {
+        // This test checks that 0^0  = 1
+        // This can only happen if a user decides to use 0 as their private key
+        // which is rejected anyways. This is only needed for tests.
+        //
+        // Note that in the wnaf update method, we do not modify the degree-0 element
+        // which has the same effect when 0^0 = 1
+        let secret = PrivateKey::from_u64(0);
+        let value = secret.tau.pow(&[0]);
+
+        assert!(value.is_one())
     }
 
-    assert_eq!(expected_srs, got_srs)
-}
+    #[test]
+    fn update_works() {
+        // This test ensures that when we update the SRS, it is being updated
+        // correctly
 
-#[test]
-fn acc_smoke() {
-    let secret_a = PrivateKey::from_u64(252);
-    let secret_b = PrivateKey::from_u64(512);
-    let secret_c = PrivateKey::from_u64(789);
+        let mut got_srs = SRS::new_for_kzg(100);
+        let mut expected_srs = got_srs.clone();
 
-    let mut acc = SRS::new_for_kzg(100);
+        let secret = PrivateKey::from_u64(123456789);
+        let secret_fr = secret.tau.clone();
 
-    // Simulate 3 participants updating the srs, one after the other
-    let before_update_1_degree_1 = acc.tau_g1[1];
-    let update_proof_1 = acc.update(secret_a);
+        got_srs.update(secret);
 
-    let before_update_2_degree_1 = acc.tau_g1[1];
-    let update_proof_2 = acc.update(secret_b);
+        for (index, tg1) in expected_srs.tau_g1.iter_mut().enumerate() {
+            let secret_pow_i = secret_fr.pow(&[index as u64]);
+            *tg1 = tg1.mul(secret_pow_i.into_repr())
+        }
+        for (index, tg2) in expected_srs.tau_g2.iter_mut().enumerate() {
+            let secret_pow_i = secret_fr.pow(&[index as u64]);
+            *tg2 = tg2.mul(secret_pow_i.into_repr())
+        }
 
-    let before_update_3_degree_1 = acc.tau_g1[1];
-    let update_proof_3 = acc.update(secret_c);
+        assert_eq!(expected_srs, got_srs)
+    }
 
-    // This verifies each update proof makes the correct transition, but it does not link
-    // the update proofs, so these could in theory be updates to different srs
-    assert!(update_proof_1.verify(before_update_1_degree_1));
-    assert!(update_proof_2.verify(before_update_2_degree_1));
-    assert!(update_proof_3.verify(before_update_3_degree_1));
+    #[test]
+    fn acc_smoke() {
+        let secret_a = PrivateKey::from_u64(252);
+        let secret_b = PrivateKey::from_u64(512);
+        let secret_c = PrivateKey::from_u64(789);
 
-    // Here we also verify the chain, if elements in the vector are out of place, the proof will also fail
-    assert!(UpdateProof::verify_chain(
-        before_update_1_degree_1,
-        &[update_proof_1, update_proof_2, update_proof_3,]
-    ));
+        let mut acc = SRS::new_for_kzg(100);
+
+        // Simulate 3 participants updating the srs, one after the other
+        let before_update_1_degree_1 = acc.tau_g1[1];
+        let update_proof_1 = acc.update(secret_a);
+
+        let before_update_2_degree_1 = acc.tau_g1[1];
+        let update_proof_2 = acc.update(secret_b);
+
+        let before_update_3_degree_1 = acc.tau_g1[1];
+        let update_proof_3 = acc.update(secret_c);
+
+        // This verifies each update proof makes the correct transition, but it does not link
+        // the update proofs, so these could in theory be updates to different srs
+        assert!(update_proof_1.verify(before_update_1_degree_1));
+        assert!(update_proof_2.verify(before_update_2_degree_1));
+        assert!(update_proof_3.verify(before_update_3_degree_1));
+
+        // Here we also verify the chain, if elements in the vector are out of place, the proof will also fail
+        assert!(UpdateProof::verify_chain(
+            before_update_1_degree_1,
+            &[update_proof_1, update_proof_2, update_proof_3,]
+        ));
+    }
 }
