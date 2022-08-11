@@ -16,7 +16,7 @@ pub const G2_SERIALISED_SIZE: usize = 96;
 pub fn g1_from_reader<R: Read>(reader: &mut R) -> Option<G1Affine> {
     let mut point_bytes = [0u8; G1_SERIALISED_SIZE];
 
-    reader.read_exact(&mut point_bytes).unwrap();
+    reader.read_exact(&mut point_bytes).ok()?;
     match deserialize_g1(point_bytes) {
         Some(point) => return Some(point),
         None => return None,
@@ -25,7 +25,7 @@ pub fn g1_from_reader<R: Read>(reader: &mut R) -> Option<G1Affine> {
 pub fn g2_from_reader<R: Read>(reader: &mut R) -> Option<G2Affine> {
     let mut point_bytes = [0u8; G2_SERIALISED_SIZE];
 
-    reader.read_exact(&mut point_bytes).unwrap();
+    reader.read_exact(&mut point_bytes).ok()?;
     match deserialize_g2(point_bytes) {
         Some(point) => return Some(point),
         None => return None,
@@ -61,9 +61,12 @@ fn serialise_fq(field: Fq) -> [u8; G1_SERIALISED_SIZE] {
     result
 }
 
-fn deserialise_fq(bytes: [u8; G1_SERIALISED_SIZE]) -> Fq {
+fn deserialise_fq(bytes: [u8; G1_SERIALISED_SIZE]) -> Option<Fq> {
     let mut tmp = BigInteger384([0, 0, 0, 0, 0, 0]);
 
+    // Note: The following unwraps are if the compiler cannot convert
+    // the byte slice into [u8;8], we know this is infallible since we
+    // are providing the indices at compile time and bytes has a fixed size
     tmp.0[5] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[0..8]).unwrap());
     tmp.0[4] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[8..16]).unwrap());
     tmp.0[3] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[16..24]).unwrap());
@@ -71,7 +74,7 @@ fn deserialise_fq(bytes: [u8; G1_SERIALISED_SIZE]) -> Fq {
     tmp.0[1] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[32..40]).unwrap());
     tmp.0[0] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[40..48]).unwrap());
 
-    Fq::from_repr(tmp).unwrap()
+    Fq::from_repr(tmp)
 }
 
 pub fn deserialize_g1(bytes: [u8; G1_SERIALISED_SIZE]) -> Option<G1Affine> {
@@ -79,7 +82,8 @@ pub fn deserialize_g1(bytes: [u8; G1_SERIALISED_SIZE]) -> Option<G1Affine> {
     let flags = EncodingFlags::get_flags(&bytes[..]);
 
     if !flags.is_compressed {
-        unimplemented!("uncompressed serialisation is not implemented")
+        return None;
+        // unimplemented!("uncompressed serialisation is not implemented")
     }
 
     if flags.is_infinity {
@@ -93,7 +97,7 @@ pub fn deserialize_g1(bytes: [u8; G1_SERIALISED_SIZE]) -> Option<G1Affine> {
         // Mask away the flag bits
         tmp[0] &= 0b0001_1111;
 
-        deserialise_fq(tmp)
+        deserialise_fq(tmp)?
     };
 
     G1Affine::get_point_from_x(x, flags.is_lexographically_largest)
@@ -107,7 +111,8 @@ pub fn deserialize_g2(bytes: [u8; G2_SERIALISED_SIZE]) -> Option<G2Affine> {
         return Some(G2Affine::default());
     }
     if !flags.is_compressed {
-        unimplemented!("uncompressed serialisation is not implemented")
+        return None;
+        // unimplemented!("uncompressed serialisation is not implemented")
     }
 
     // Attempt to obtain the x-coordinate
@@ -118,13 +123,13 @@ pub fn deserialize_g2(bytes: [u8; G2_SERIALISED_SIZE]) -> Option<G2Affine> {
         // Mask away the flag bits
         tmp[0] &= 0b0001_1111;
 
-        deserialise_fq(tmp)
+        deserialise_fq(tmp)?
     };
     let xc0 = {
         let mut tmp = [0; G1_SERIALISED_SIZE];
         tmp.copy_from_slice(&bytes[48..96]);
 
-        deserialise_fq(tmp)
+        deserialise_fq(tmp)?
     };
 
     let x = Fp2::new(xc0, xc1);
