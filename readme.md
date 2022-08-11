@@ -34,6 +34,10 @@ In order to contribute to a ceremony, you need to:
     // This method will ensure that the first points is in the correct group and that none of the points are zero
     let mut srs = Accumulator::deserialise(bytes, params);
 
+    // Save the old SRS as we will do subgroup checks on it, after
+    // since we assume that the Coordinator is honest. 
+    let old_srs = srs.clone();
+
     // Create your private key
     let private_key = PrivateKey::rand(rng);
 
@@ -43,6 +47,13 @@ In order to contribute to a ceremony, you need to:
     // Send the SRS and update proof to the appropriate party
     update_proof.serialise();
     srs.serialise();
+
+    // Now verify that the old srs before your contribution was applied
+    // was correct.
+    let is_valid = old_srs.subgroup_check();
+    if !is_valid {
+        // do not attest to contributing
+    }
 ````
 
 ### Protocol Verifier
