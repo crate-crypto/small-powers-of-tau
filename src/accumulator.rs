@@ -5,7 +5,7 @@ use ark_ff::{Field, PrimeField, Zero};
 use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 
 // TODO: rename Accumulator to SRS
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Accumulator {
     pub(crate) tau_g1: Vec<G1Projective>,
     pub(crate) tau_g2: Vec<G2Projective>,

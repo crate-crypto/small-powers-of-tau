@@ -65,19 +65,6 @@ impl Accumulator {
     }
 }
 
-impl PartialEq for UpdateProof {
-    fn eq(&self, other: &Self) -> bool {
-        self.commitment_to_secret == other.commitment_to_secret
-            && self.new_accumulated_point == other.new_accumulated_point
-    }
-}
-
-impl PartialEq for Accumulator {
-    fn eq(&self, other: &Self) -> bool {
-        self.tau_g1 == other.tau_g1 && self.tau_g2 == other.tau_g2
-    }
-}
-
 impl UpdateProof {
     pub fn serialise(&self) -> Vec<u8> {
         let mut bytes = Vec::new();

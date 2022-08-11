@@ -5,7 +5,7 @@
 use crate::shared_secret::SharedSecretChain;
 use ark_bls12_381::{G1Projective, G2Projective};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct UpdateProof {
     // A commitment to the secret scalar `p`
     pub(crate) commitment_to_secret: G2Projective,
