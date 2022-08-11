@@ -1,4 +1,4 @@
-use crate::interop_point_encoding::{deserialize_g1, deserialize_g2, serialize_g1, serialize_g2};
+use crate::interop_point_encoding::{g1_from_reader, g2_from_reader, serialize_g1, serialize_g2};
 use crate::{
     srs::{Parameters, SRS},
     update_proof::UpdateProof,
@@ -6,30 +6,8 @@ use crate::{
 use ark_bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective};
 use ark_ec::{AffineCurve, ProjectiveCurve};
 use ark_ff::Zero;
-use std::io::Read;
 
 // TODO: use JSON serialisation strategy that is being used in the python specs
-
-fn g1_from_reader<R: Read>(reader: &mut R) -> Option<G1Affine> {
-    const G1_SERIALISED_SIZE: usize = 48;
-    let mut point_bytes = [0u8; G1_SERIALISED_SIZE];
-
-    reader.read_exact(&mut point_bytes).unwrap();
-    match deserialize_g1(point_bytes) {
-        Some(point) => return Some(point),
-        None => return None,
-    };
-}
-fn g2_from_reader<R: Read>(reader: &mut R) -> Option<G2Affine> {
-    const G2_SERIALISED_SIZE: usize = 96;
-    let mut point_bytes = [0u8; G2_SERIALISED_SIZE];
-
-    reader.read_exact(&mut point_bytes).unwrap();
-    match deserialize_g2(point_bytes) {
-        Some(point) => return Some(point),
-        None => return None,
-    };
-}
 
 impl SRS {
     pub fn serialise(&self) -> Vec<u8> {
@@ -39,13 +17,11 @@ impl SRS {
         let g2_points_affine = G2Projective::batch_normalization_into_affine(&self.tau_g2);
 
         for point in &g1_points_affine {
-            let points_as_bytes = serialize_g1(point);
-            bytes.extend(points_as_bytes);
+            bytes.extend(serialize_g1(point));
         }
 
         for point in &g2_points_affine {
-            let points_as_bytes = serialize_g2(point);
-            bytes.extend(points_as_bytes);
+            bytes.extend(serialize_g2(point));
         }
 
         bytes

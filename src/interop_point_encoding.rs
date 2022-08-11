@@ -1,3 +1,5 @@
+use std::io::Read;
+
 //  The problem is that the arkworks encoding is not consistent with the "official" encoding for bls12_381
 // So this wrapper code is needed.
 //
@@ -6,8 +8,32 @@
 use ark_bls12_381::{Fq, G1Affine, G2Affine};
 use ark_ff::{BigInteger384, Fp2, PrimeField};
 
-fn serialize_g2_x(p: &G2Affine) -> [u8; 96] {
-    let mut result = [0u8; 96];
+// The compressed size of a serialised G1 element
+pub const G1_SERIALISED_SIZE: usize = 48;
+// The compressed size of a serialised G2 element
+pub const G2_SERIALISED_SIZE: usize = 96;
+
+pub fn g1_from_reader<R: Read>(reader: &mut R) -> Option<G1Affine> {
+    let mut point_bytes = [0u8; G1_SERIALISED_SIZE];
+
+    reader.read_exact(&mut point_bytes).unwrap();
+    match deserialize_g1(point_bytes) {
+        Some(point) => return Some(point),
+        None => return None,
+    };
+}
+pub fn g2_from_reader<R: Read>(reader: &mut R) -> Option<G2Affine> {
+    let mut point_bytes = [0u8; G2_SERIALISED_SIZE];
+
+    reader.read_exact(&mut point_bytes).unwrap();
+    match deserialize_g2(point_bytes) {
+        Some(point) => return Some(point),
+        None => return None,
+    };
+}
+
+fn serialize_g2_x(p: &G2Affine) -> [u8; G2_SERIALISED_SIZE] {
+    let mut result = [0u8; G2_SERIALISED_SIZE];
 
     let c1_bytes = serialise_fq(p.x.c1);
     let c0_bytes = serialise_fq(p.x.c0);
@@ -16,12 +42,12 @@ fn serialize_g2_x(p: &G2Affine) -> [u8; 96] {
 
     result
 }
-fn serialize_g1_x(p: &G1Affine) -> [u8; 48] {
+fn serialize_g1_x(p: &G1Affine) -> [u8; G1_SERIALISED_SIZE] {
     return serialise_fq(p.x);
 }
 
-fn serialise_fq(field: Fq) -> [u8; 48] {
-    let mut result = [0u8; 48];
+fn serialise_fq(field: Fq) -> [u8; G1_SERIALISED_SIZE] {
+    let mut result = [0u8; G1_SERIALISED_SIZE];
 
     let rep = field.into_repr();
 
@@ -35,7 +61,7 @@ fn serialise_fq(field: Fq) -> [u8; 48] {
     result
 }
 
-fn deserialise_fq(bytes: [u8; 48]) -> Fq {
+fn deserialise_fq(bytes: [u8; G1_SERIALISED_SIZE]) -> Fq {
     let mut tmp = BigInteger384([0, 0, 0, 0, 0, 0]);
 
     tmp.0[5] = u64::from_be_bytes(<[u8; 8]>::try_from(&bytes[0..8]).unwrap());
@@ -48,7 +74,7 @@ fn deserialise_fq(bytes: [u8; 48]) -> Fq {
     Fq::from_repr(tmp).unwrap()
 }
 
-pub fn deserialize_g1(bytes: [u8; 48]) -> Option<G1Affine> {
+pub fn deserialize_g1(bytes: [u8; G1_SERIALISED_SIZE]) -> Option<G1Affine> {
     // Obtain the three flags from the start of the byte sequence
     let flags = EncodingFlags::get_flags(&bytes[..]);
 
@@ -61,7 +87,7 @@ pub fn deserialize_g1(bytes: [u8; 48]) -> Option<G1Affine> {
     }
     // Attempt to obtain the x-coordinate
     let x = {
-        let mut tmp = [0; 48];
+        let mut tmp = [0; G1_SERIALISED_SIZE];
         tmp.copy_from_slice(&bytes[0..48]);
 
         // Mask away the flag bits
@@ -73,7 +99,7 @@ pub fn deserialize_g1(bytes: [u8; 48]) -> Option<G1Affine> {
     G1Affine::get_point_from_x(x, flags.is_lexographically_largest)
 }
 
-pub fn deserialize_g2(bytes: [u8; 96]) -> Option<G2Affine> {
+pub fn deserialize_g2(bytes: [u8; G2_SERIALISED_SIZE]) -> Option<G2Affine> {
     // Obtain the three flags from the start of the byte sequence
     let flags = EncodingFlags::get_flags(&bytes);
 
@@ -86,7 +112,7 @@ pub fn deserialize_g2(bytes: [u8; 96]) -> Option<G2Affine> {
 
     // Attempt to obtain the x-coordinate
     let xc1 = {
-        let mut tmp = [0; 48];
+        let mut tmp = [0; G1_SERIALISED_SIZE];
         tmp.copy_from_slice(&bytes[0..48]);
 
         // Mask away the flag bits
@@ -95,7 +121,7 @@ pub fn deserialize_g2(bytes: [u8; 96]) -> Option<G2Affine> {
         deserialise_fq(tmp)
     };
     let xc0 = {
-        let mut tmp = [0; 48];
+        let mut tmp = [0; G1_SERIALISED_SIZE];
         tmp.copy_from_slice(&bytes[48..96]);
 
         deserialise_fq(tmp)
@@ -140,7 +166,7 @@ impl EncodingFlags {
     }
 }
 
-pub fn serialize_g1(p: &G1Affine) -> [u8; 48] {
+pub fn serialize_g1(p: &G1Affine) -> [u8; G1_SERIALISED_SIZE] {
     let mut result = serialize_g1_x(p);
     let encoding = EncodingFlags {
         is_compressed: true,
@@ -151,7 +177,7 @@ pub fn serialize_g1(p: &G1Affine) -> [u8; 48] {
     result
 }
 
-pub fn serialize_g2(p: &G2Affine) -> [u8; 96] {
+pub fn serialize_g2(p: &G2Affine) -> [u8; G2_SERIALISED_SIZE] {
     let mut result = serialize_g2_x(p);
     let encoding = EncodingFlags {
         is_compressed: true,
