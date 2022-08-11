@@ -4,11 +4,13 @@ use ark_ff::{Field, PrimeField, Zero};
 
 use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 
+// TODO: rename Accumulator to SRS
 #[derive(Debug, Clone)]
 pub struct Accumulator {
     pub(crate) tau_g1: Vec<G1Projective>,
     pub(crate) tau_g2: Vec<G2Projective>,
 }
+// TODO: we can add the starting points here too
 #[derive(Debug, Clone, Copy)]
 pub struct Parameters {
     pub num_g1_elements_needed: usize,
@@ -35,7 +37,11 @@ impl Accumulator {
     // highest degree that you wish to use kzg with.
     //
     // Example; a degree 2 polynomial has 3 coefficients ax^0 + bx^1 + cx^2
-    pub fn new_for_kzg(num_coefficients: usize) -> Accumulator {
+    #[cfg(test)]
+    #[deprecated(
+        note = "this is not applicable for the ethereum context, so we can eventually remove"
+    )]
+    pub(crate) fn new_for_kzg(num_coefficients: usize) -> Accumulator {
         // The amount of G2 elements needed for KZG based commitment schemes
         const NUM_G2_ELEMENTS_NEEDED: usize = 2;
 
@@ -49,19 +55,17 @@ impl Accumulator {
 
     // Updates the accumulator and produces a proof of this update
     pub fn update(&mut self, private_key: PrivateKey) -> UpdateProof {
-        // Save the previous s*G_1 element, then update the accumulator and save the new s*private_key*G_1 element
-        let previous_tau = self.tau_g1[1];
         self.update_accumulator(private_key.tau);
         let updated_tau = self.tau_g1[1];
 
         UpdateProof {
             commitment_to_secret: private_key.to_public(),
-            previous_accumulated_point: previous_tau,
             new_accumulated_point: updated_tau,
         }
     }
 
-    // Inefficiently, updates the group elements using a users private key
+    // Updates the group elements using a users private key
+    // TODO: add an in-efficient version without wnaf
     fn update_accumulator(&mut self, private_key: Fr) {
         use ark_ec::wnaf::WnafContext;
         use rayon::prelude::*;
@@ -91,39 +95,33 @@ impl Accumulator {
 
     // Verify whether the transition from one SRS to the other was valid
     //
-    // Most of the time, there will be a single update proof for verifying that a contribution did indeed update the SRS correctly.
-    //
-    // After the ceremony is over, one may use this method to check all update proofs that were given in the ceremony
+    // After the ceremony is over, an actor whom wants to verify that the ceremony was
+    // was done correctly will collect all of the updates from the ceremony, along with
+    // the starting and ending SRS in order to call this method.
     pub fn verify_updates(
-        // TODO: We do not _need_ the whole `before` accumulator, this API is just a bit cleaner
         before: &Accumulator,
         after: &Accumulator,
         update_proofs: &[UpdateProof],
     ) -> bool {
-        let first_update = update_proofs.first().expect("expected at least one update");
         let last_update = update_proofs.last().expect("expected at least one update");
 
-        // 1a. Check that the updates started from the starting SRS
-        if before.tau_g1[1] != first_update.previous_accumulated_point {
-            return false;
-        }
-        // 1b.Check that the updates finished at the ending SRS
+        // 1. Check that the updates finished at the ending SRS
         if after.tau_g1[1] != last_update.new_accumulated_point {
             return false;
         }
 
         // 2. Check the update proofs are correct and form a chain of updates
-        if !UpdateProof::verify_chain(update_proofs) {
+        if !UpdateProof::verify_chain(before.tau_g1[1], update_proofs) {
             return false;
         }
 
-        // 3. Check that the degree-0 component is not the identity element
+        // 3. Check that the degree-1 component is not the identity element
         // No need to check the other elements because the structure check will fail
         // if they are also not the identity element
-        if after.tau_g1[0].is_zero() {
+        if after.tau_g1[1].is_zero() {
             return false;
         }
-        if after.tau_g2[0].is_zero() {
+        if after.tau_g2[1].is_zero() {
             return false;
         }
 
@@ -135,6 +133,32 @@ impl Accumulator {
         true
     }
 
+    // Check that the list of G1 and G2 elements are in the
+    // prime order subgroup
+    // These points are already checked to be on the curve which is _cheap_
+    // so that we do not become victim to the invalid curve attack
+    pub fn subgroup_check(&self) -> bool {
+        use crate::interop_subgroup_checks::{g1, g2};
+
+        let g1_points_affine = G1Projective::batch_normalization_into_affine(&self.tau_g1);
+        let g2_points_affine = G2Projective::batch_normalization_into_affine(&self.tau_g2);
+        for point in g1_points_affine {
+            if !g1::is_in_correct_subgroup_assuming_on_curve(&point) {
+                return false;
+            }
+        }
+        for point in g2_points_affine {
+            if !g2::is_in_correct_subgroup_assuming_on_curve(&point) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Verify that a single update was applied to transition `before` to `after`
+    // This method will be used during the Ceremony by the Coordinator, when
+    // they receive a contribution from a contributor
     pub fn verify_update(
         before: &Accumulator,
         after: &Accumulator,
@@ -190,20 +214,8 @@ fn vandemonde_challenge(x: Fr, n: usize) -> Vec<Fr> {
 }
 
 #[test]
-fn reject_private_key_one() {
-    // This test ensures that one cannot update the SRS using either 0 or 1
-
-    let before = Accumulator::new_for_kzg(100);
-    let mut after = before.clone();
-
-    let secret = PrivateKey::from_u64(1);
-    let update_proof = after.update(secret);
-
-    assert!(!Accumulator::verify_update(&before, &after, &update_proof));
-}
-#[test]
 fn reject_private_key_zero() {
-    // This test ensures that one cannot update the SRS using either 0 or 1
+    // This test ensures that one cannot update the SRS using 0
 
     let before = Accumulator::new_for_kzg(100);
     let mut after = before.clone();
@@ -215,7 +227,7 @@ fn reject_private_key_zero() {
 }
 
 #[test]
-fn acc_fuzz() {
+fn acc_smoke() {
     let secret_a = PrivateKey::from_u64(252);
     let secret_b = PrivateKey::from_u64(512);
     let secret_c = PrivateKey::from_u64(789);
@@ -223,20 +235,24 @@ fn acc_fuzz() {
     let mut acc = Accumulator::new_for_kzg(100);
 
     // Simulate 3 participants updating the accumulator, one after the other
+    let before_update_1_degree_1 = acc.tau_g1[1];
     let update_proof_1 = acc.update(secret_a);
+
+    let before_update_2_degree_1 = acc.tau_g1[1];
     let update_proof_2 = acc.update(secret_b);
+
+    let before_update_3_degree_1 = acc.tau_g1[1];
     let update_proof_3 = acc.update(secret_c);
 
     // This verifies each update proof makes the correct transition, but it does not link
     // the update proofs, so these could in theory be updates to different accumulators
-    assert!(update_proof_1.verify());
-    assert!(update_proof_2.verify());
-    assert!(update_proof_3.verify());
+    assert!(update_proof_1.verify(before_update_1_degree_1));
+    assert!(update_proof_2.verify(before_update_2_degree_1));
+    assert!(update_proof_3.verify(before_update_3_degree_1));
 
     // Here we also verify the chain, if elements in the vector are out of place, the proof will also fail
-    assert!(UpdateProof::verify_chain(&[
-        update_proof_1,
-        update_proof_2,
-        update_proof_3,
-    ]));
+    assert!(UpdateProof::verify_chain(
+        before_update_1_degree_1,
+        &[update_proof_1, update_proof_2, update_proof_3,]
+    ));
 }
