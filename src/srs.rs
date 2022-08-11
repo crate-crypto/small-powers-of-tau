@@ -11,7 +11,6 @@ pub struct SRS {
     pub(crate) tau_g1: Vec<G1Projective>,
     pub(crate) tau_g2: Vec<G2Projective>,
 }
-// TODO: we can add the starting points here too
 #[derive(Debug, Clone, Copy)]
 pub struct Parameters {
     pub num_g1_elements_needed: usize,
