@@ -1,6 +1,6 @@
 use ark_bls12_381::{Fr, G1Projective, G2Projective};
 use ark_ec::{PairingEngine, ProjectiveCurve};
-use ark_ff::Zero;
+use ark_ff::{Field, PrimeField, Zero};
 
 use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 
@@ -65,7 +65,6 @@ impl SRS {
     }
 
     // Updates the group elements using a users private key
-    // TODO: add an in-efficient version without wnaf
     fn update_srs(&mut self, private_key: Fr) {
         use ark_ec::wnaf::WnafContext;
         use rayon::prelude::*;
@@ -76,16 +75,16 @@ impl SRS {
 
         let wnaf = WnafContext::new(3);
 
-        self.tau_g1
-            .par_iter_mut()
+        ark_std::cfg_iter_mut!(self.tau_g1)
+            // Skip the degree-0 element as it does not get updated
             .skip(1)
             .zip(&powers_of_priv_key)
             .for_each(|(tg1, priv_pow)| {
                 *tg1 = wnaf.mul(*tg1, priv_pow);
             });
 
-        self.tau_g2
-            .par_iter_mut()
+        ark_std::cfg_iter_mut!(self.tau_g2)
+            // Skip the degree-0 element as it does not get updated
             .skip(1)
             .zip(&powers_of_priv_key)
             .for_each(|(tg2, priv_pow)| {
@@ -216,6 +215,31 @@ fn reject_private_key_zero() {
     let update_proof = after.update(secret);
 
     assert!(!SRS::verify_update(&before, &after, &update_proof));
+}
+
+#[test]
+fn update_works() {
+    // This test ensures that when we update the SRS, it is being updated
+    // correctly
+
+    let mut got_srs = SRS::new_for_kzg(100);
+    let mut expected_srs = got_srs.clone();
+
+    let secret = PrivateKey::from_u64(123456789);
+    let secret_fr = secret.tau.clone();
+
+    got_srs.update(secret);
+
+    for (index, tg1) in expected_srs.tau_g1.iter_mut().enumerate() {
+        let secret_pow_i = secret_fr.pow(&[index as u64]);
+        *tg1 = tg1.mul(secret_pow_i.into_repr())
+    }
+    for (index, tg2) in expected_srs.tau_g2.iter_mut().enumerate() {
+        let secret_pow_i = secret_fr.pow(&[index as u64]);
+        *tg2 = tg2.mul(secret_pow_i.into_repr())
+    }
+
+    assert_eq!(expected_srs, got_srs)
 }
 
 #[test]
