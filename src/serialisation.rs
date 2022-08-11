@@ -3,9 +3,8 @@ use crate::{
     srs::{Parameters, SRS},
     update_proof::UpdateProof,
 };
-use ark_bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective};
+use ark_bls12_381::{G1Projective, G2Projective};
 use ark_ec::{AffineCurve, ProjectiveCurve};
-use ark_ff::Zero;
 
 // TODO: use JSON serialisation strategy that is being used in the python specs
 

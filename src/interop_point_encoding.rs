@@ -18,18 +18,18 @@ pub fn g1_from_reader<R: Read>(reader: &mut R) -> Option<G1Affine> {
 
     reader.read_exact(&mut point_bytes).ok()?;
     match deserialize_g1(point_bytes) {
-        Some(point) => return Some(point),
-        None => return None,
-    };
+        Some(point) => Some(point),
+        None => None,
+    }
 }
 pub fn g2_from_reader<R: Read>(reader: &mut R) -> Option<G2Affine> {
     let mut point_bytes = [0u8; G2_SERIALISED_SIZE];
 
     reader.read_exact(&mut point_bytes).ok()?;
     match deserialize_g2(point_bytes) {
-        Some(point) => return Some(point),
-        None => return None,
-    };
+        Some(point) => Some(point),
+        None => None,
+    }
 }
 
 fn serialize_g2_x(p: &G2Affine) -> [u8; G2_SERIALISED_SIZE] {
