@@ -1,6 +1,6 @@
-use ark_bls12_381::{Fr, G1Affine, G1Projective, G2Affine, G2Projective};
-use ark_ec::{AffineCurve, PairingEngine, ProjectiveCurve};
-use ark_ff::{Field, PrimeField, Zero};
+use ark_bls12_381::{Fr, G1Projective, G2Projective};
+use ark_ec::{PairingEngine, ProjectiveCurve};
+use ark_ff::Zero;
 
 use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 
