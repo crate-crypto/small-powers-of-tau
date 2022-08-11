@@ -32,7 +32,7 @@ In order to contribute to a ceremony, you need to:
     
     // Deserialise the bytes received to create the SRS
     // This method will ensure that the first points is in the correct group and that none of the points are zero
-    let mut srs = Accumulator::deserialise(bytes, params);
+    let mut srs = SRS::deserialise(bytes, params);
 
     // Save the old SRS as we will do subgroup checks on it, after
     // since we assume that the Coordinator is honest. 
@@ -79,11 +79,11 @@ The workflow is as follows:
 
     // Deserialise the bytes received to create the SRS
     // This method will ensure that the points are in the correct group and that none of the points are zero
-    let mut srs_new = Accumulator::deserialise(bytes, params);
+    let mut srs_new = SRS::deserialise(bytes, params);
     // Deserialise the update proof
     let update_proof = UpdateProof::deserialise(bytes)
 
-    let valid_update = Accumulator::verify_update(&srs_old, &srs_new, &update_proof);
+    let valid_update = SRS::verify_update(&srs_old, &srs_new, &update_proof);
 
     // Do something based on whether the update was valid
 ````
@@ -101,8 +101,8 @@ These are the actors who want to either check that their contributions were incl
 
     let bytes = // Assuming you downloaded the starting SRS, the final SRS and the update proofs from some storage location
 
-    let starting_srs = Accumulator::deserialise(bytes, params);
-    let final_srs = Accumulator::deserialise(bytes, params, SubgroupCheck::Full);
+    let starting_srs = SRS::deserialise(bytes, params);
+    let final_srs = SRS::deserialise(bytes, params);
     let update_proofs = //
 
     // Verify that these update proofs indeed do correspond to the transition from the starting SRS to the final SRS

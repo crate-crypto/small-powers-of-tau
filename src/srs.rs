@@ -227,7 +227,7 @@ fn acc_smoke() {
 
     let mut acc = SRS::new_for_kzg(100);
 
-    // Simulate 3 participants updating the accumulator, one after the other
+    // Simulate 3 participants updating the srs, one after the other
     let before_update_1_degree_1 = acc.tau_g1[1];
     let update_proof_1 = acc.update(secret_a);
 
@@ -238,7 +238,7 @@ fn acc_smoke() {
     let update_proof_3 = acc.update(secret_c);
 
     // This verifies each update proof makes the correct transition, but it does not link
-    // the update proofs, so these could in theory be updates to different accumulators
+    // the update proofs, so these could in theory be updates to different srs
     assert!(update_proof_1.verify(before_update_1_degree_1));
     assert!(update_proof_2.verify(before_update_2_degree_1));
     assert!(update_proof_3.verify(before_update_3_degree_1));

@@ -21,13 +21,13 @@ impl SharedSecretChain {
     }
 
     // Extends a shared secret chain with the new accumulated point and a witness that
-    // holds the discrete log that was used to transition from the previous accumulator to the next
+    // holds the discrete log that was used to transition from the previous srs to the next
     pub fn extend(&mut self, new_accumulated_point: G1Projective, witness: G2Projective) {
         self.accumulated_points.push(new_accumulated_point);
         self.witnesses.push(witness)
     }
 
-    // Verifies a shared secret chain, each accumulator is checked to have been transformed from the previous one
+    // Verifies a shared secret chain, each srs is checked to have been transformed from the previous one
     // using the specified witness
     pub fn verify(&self) -> bool {
         // Overlapping window of two; see example: https://gist.github.com/rust-play/d83ae8ffdbf24f17612e05dc75c2ee06
