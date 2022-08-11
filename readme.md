@@ -32,7 +32,7 @@ In order to contribute to a ceremony, you need to:
     
     // Deserialise the bytes received to create the SRS
     // This method will ensure that the first points is in the correct group and that none of the points are zero
-    let mut srs = Accumulator::deserialise(bytes, params, SubgroupCheck::Partial);
+    let mut srs = Accumulator::deserialise(bytes, params);
 
     // Create your private key
     let private_key = PrivateKey::rand(rng);
@@ -68,7 +68,7 @@ The workflow is as follows:
 
     // Deserialise the bytes received to create the SRS
     // This method will ensure that the points are in the correct group and that none of the points are zero
-    let mut srs_new = Accumulator::deserialise(bytes, params, SubgroupCheck::Full);
+    let mut srs_new = Accumulator::deserialise(bytes, params);
     // Deserialise the update proof
     let update_proof = UpdateProof::deserialise(bytes)
 
