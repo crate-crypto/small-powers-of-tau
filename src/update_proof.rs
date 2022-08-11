@@ -27,9 +27,6 @@ impl UpdateProof {
         starting_point: G1Projective,
         update_proofs: &[UpdateProof],
     ) -> bool {
-        // TODO: consider either returning a result here or returning false
-        // TODO: alternatively, we can say that its the job of the caller to
-        // TODO: ensure that its not empty
         assert!(!update_proofs.is_empty(), "no update proofs are present");
 
         let mut chain = SharedSecretChain::starting_from(starting_point);
