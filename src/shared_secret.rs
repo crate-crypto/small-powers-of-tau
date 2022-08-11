@@ -6,7 +6,9 @@ use ark_ec::{AffineCurve, PairingEngine};
 // For example; Given the point P = (a * b * c) G_1
 // An shared secret proof is capable of proving that P was created in four steps:
 // 1 * G_1 -> a * G_1 -> (a * b) * G_1 -> (a * b * c) * G_1
-
+// Note: If a,,b or c for example is 0 or 1. This is valid for this module
+// The fact that one or zero may be bad is a detail for the SRS checks and
+// not the shared secret chain check.
 pub struct SharedSecretChain {
     accumulated_points: Vec<G1Projective>,
     witnesses: Vec<G2Projective>,
