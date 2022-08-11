@@ -30,32 +30,23 @@ impl SRS {
     // We do not check if the point is the identity when deserialising
     // What we do check, is that every point is a point on the curve
     pub fn deserialise(bytes: &[u8], parameters: Parameters) -> Option<Self> {
-        // TODO: We need to deserialise into affine representation because arkworks does not have `is_on_curve` and `subgroup_check` for Projective representation
-        // TODO: its possible to deserialise and then do the checks first, then store it in the
-        // TODO: vector
-        let mut g1 = vec![G1Affine::prime_subgroup_generator(); parameters.num_g1_elements_needed];
-        let mut g2 = vec![G2Affine::prime_subgroup_generator(); parameters.num_g2_elements_needed];
+        let mut g1 = vec![G1Projective::default(); parameters.num_g1_elements_needed];
+        let mut g2 = vec![G2Projective::default(); parameters.num_g2_elements_needed];
 
         let mut reader = std::io::Cursor::new(bytes);
 
         for element in g1.iter_mut() {
             let deserialised_point = g1_from_reader(&mut reader)?;
-            *element = deserialised_point
+            *element = deserialised_point.into_projective()
         }
         for element in g2.iter_mut() {
             let deserialised_point = g2_from_reader(&mut reader)?;
-            *element = deserialised_point
+            *element = deserialised_point.into_projective()
         }
 
         Some(SRS {
-            tau_g1: g1
-                .into_iter()
-                .map(|element| element.into_projective())
-                .collect(),
-            tau_g2: g2
-                .into_iter()
-                .map(|element| element.into_projective())
-                .collect(),
+            tau_g1: g1,
+            tau_g2: g2,
         })
     }
 }
