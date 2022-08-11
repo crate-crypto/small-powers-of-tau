@@ -1,6 +1,8 @@
+use ark_bls12_381::{G1Projective, G2Projective};
+use ark_ec::ProjectiveCurve;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand::thread_rng;
-use small_powers_of_tau::{keypair::PrivateKey, serialisation::SubgroupCheck, srs::Accumulator};
+use small_powers_of_tau::{keypair::PrivateKey, serialisation::SubgroupCheck, srs::SRS};
 
 fn update_algo() {
     use small_powers_of_tau::srs::*;
@@ -13,7 +15,7 @@ fn update_algo() {
     // Simulate deserialisation
     let acc = SRS::new(params);
     let bytes = acc.serialise();
-    let mut acc = SRS::deserialise(&bytes, params, SubgroupCheck::Partial);
+    let mut acc = SRS::deserialise(&bytes, params);
 
     let mut rng = &mut thread_rng();
     let priv_key = PrivateKey::rand(rng);
