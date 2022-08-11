@@ -15,14 +15,6 @@ pub struct UpdateProof {
 }
 
 impl UpdateProof {
-    #[cfg(test)]
-    pub(crate) fn verify(&self, starting_point: G1Projective) -> bool {
-        let mut chain = SharedSecretChain::starting_from(starting_point);
-        chain.extend(self.new_accumulated_point, self.commitment_to_secret);
-
-        chain.verify()
-    }
-
     pub(crate) fn verify_chain(
         starting_point: G1Projective,
         update_proofs: &[UpdateProof],
