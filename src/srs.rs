@@ -113,6 +113,10 @@ impl SRS {
         // 3. Check that the degree-1 component is not the identity element
         // No need to check the other elements because the structure check will fail
         // if they are also not the identity element
+        //
+        // Since resulting SRS is not zero, it implies that the private key/randomness
+        // used was also not zero. Which implies that the public key inside of the
+        // update proof is not the identity element or the update proof check will fail.
         if after.tau_g1[1].is_zero() {
             return false;
         }

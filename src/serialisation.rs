@@ -68,14 +68,6 @@ impl UpdateProof {
         let commitment_to_secret = g2_from_reader(&mut reader)?.into_projective();
         let new_accumulated_point = g1_from_reader(&mut reader)?.into_projective();
 
-        // TODO: should we move these checks into the SRS checks that need to be done?
-        if commitment_to_secret.is_zero() {
-            return None;
-        }
-        if new_accumulated_point.is_zero() {
-            return None;
-        }
-
         Some(UpdateProof {
             commitment_to_secret,
             new_accumulated_point,
