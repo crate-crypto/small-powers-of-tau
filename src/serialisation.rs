@@ -1,6 +1,6 @@
 use crate::interop_point_encoding;
 use crate::{
-    accumulator::{Accumulator, Parameters},
+    srs::{Parameters, SRS},
     update_proof::UpdateProof,
 };
 use ark_bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective};
@@ -8,7 +8,7 @@ use ark_ec::{AffineCurve, ProjectiveCurve};
 use ark_ff::Zero;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Read};
 
-impl Accumulator {
+impl SRS {
     pub fn serialise(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
@@ -52,7 +52,7 @@ impl Accumulator {
             *element = deserialize_g2(point_bytes);
         }
 
-        Ok(Accumulator {
+        Ok(SRS {
             tau_g1: g1
                 .into_iter()
                 .map(|element| element.into_projective())
@@ -120,19 +120,19 @@ mod tests {
     }
 
     #[test]
-    fn accumulator_serialise_roundtrip() {
+    fn srs_serialise_roundtrip() {
         let params = Parameters {
             num_g1_elements_needed: 100,
             num_g2_elements_needed: 25,
         };
 
         let secret = PrivateKey::from_u64(5687);
-        let mut acc = Accumulator::new(params);
+        let mut acc = SRS::new(params);
         acc.update(secret);
 
         let bytes = acc.serialise();
-        let deserialised_acc = Accumulator::deserialise(&bytes, params).unwrap();
+        let deserialised_srs = SRS::deserialise(&bytes, params).unwrap();
 
-        assert_eq!(acc, deserialised_acc);
+        assert_eq!(acc, deserialised_srs);
     }
 }

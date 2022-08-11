@@ -1,11 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand::thread_rng;
-use small_powers_of_tau::{
-    accumulator::Accumulator, keypair::PrivateKey, serialisation::SubgroupCheck,
-};
+use small_powers_of_tau::{keypair::PrivateKey, serialisation::SubgroupCheck, srs::Accumulator};
 
 fn update_algo() {
-    use small_powers_of_tau::accumulator::*;
+    use small_powers_of_tau::srs::*;
 
     let params = Parameters {
         num_g1_elements_needed: 2usize.pow(16),
@@ -13,9 +11,9 @@ fn update_algo() {
     };
 
     // Simulate deserialisation
-    let acc = Accumulator::new(params);
+    let acc = SRS::new(params);
     let bytes = acc.serialise();
-    let mut acc = Accumulator::deserialise(&bytes, params, SubgroupCheck::Partial);
+    let mut acc = SRS::deserialise(&bytes, params, SubgroupCheck::Partial);
 
     let mut rng = &mut thread_rng();
     let priv_key = PrivateKey::rand(rng);

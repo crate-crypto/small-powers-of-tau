@@ -4,9 +4,10 @@ use ark_ff::{Field, PrimeField, Zero};
 
 use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 
-// TODO: rename Accumulator to SRS
+// Structured Reference String. Stores the powers of tau
+// in G1 and G2
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Accumulator {
+pub struct SRS {
     pub(crate) tau_g1: Vec<G1Projective>,
     pub(crate) tau_g2: Vec<G2Projective>,
 }
@@ -16,10 +17,10 @@ pub struct Parameters {
     pub num_g1_elements_needed: usize,
     pub num_g2_elements_needed: usize,
 }
-impl Accumulator {
+impl SRS {
     // Creates a powers of tau ceremony.
     // This is not compatible with the BGM17 Groth16 powers of tau ceremony (notice there is no \alpha, \beta)
-    pub fn new(parameters: Parameters) -> Accumulator {
+    pub fn new(parameters: Parameters) -> SRS {
         Self {
             tau_g1: vec![
                 G1Projective::prime_subgroup_generator();
@@ -41,7 +42,7 @@ impl Accumulator {
     #[deprecated(
         note = "this is not applicable for the ethereum context, so we can eventually remove"
     )]
-    pub(crate) fn new_for_kzg(num_coefficients: usize) -> Accumulator {
+    pub(crate) fn new_for_kzg(num_coefficients: usize) -> SRS {
         // The amount of G2 elements needed for KZG based commitment schemes
         const NUM_G2_ELEMENTS_NEEDED: usize = 2;
 
@@ -50,12 +51,12 @@ impl Accumulator {
             num_g2_elements_needed: NUM_G2_ELEMENTS_NEEDED,
         };
 
-        Accumulator::new(params)
+        SRS::new(params)
     }
 
-    // Updates the accumulator and produces a proof of this update
+    // Updates the srs and produces a proof of this update
     pub fn update(&mut self, private_key: PrivateKey) -> UpdateProof {
-        self.update_accumulator(private_key.tau);
+        self.update_srs(private_key.tau);
         let updated_tau = self.tau_g1[1];
 
         UpdateProof {
@@ -66,7 +67,7 @@ impl Accumulator {
 
     // Updates the group elements using a users private key
     // TODO: add an in-efficient version without wnaf
-    fn update_accumulator(&mut self, private_key: Fr) {
+    fn update_srs(&mut self, private_key: Fr) {
         use ark_ec::wnaf::WnafContext;
         use rayon::prelude::*;
 
@@ -98,11 +99,7 @@ impl Accumulator {
     // After the ceremony is over, an actor whom wants to verify that the ceremony was
     // was done correctly will collect all of the updates from the ceremony, along with
     // the starting and ending SRS in order to call this method.
-    pub fn verify_updates(
-        before: &Accumulator,
-        after: &Accumulator,
-        update_proofs: &[UpdateProof],
-    ) -> bool {
+    pub fn verify_updates(before: &SRS, after: &SRS, update_proofs: &[UpdateProof]) -> bool {
         let last_update = update_proofs.last().expect("expected at least one update");
 
         // 1. Check that the updates finished at the ending SRS
@@ -159,12 +156,8 @@ impl Accumulator {
     // Verify that a single update was applied to transition `before` to `after`
     // This method will be used during the Ceremony by the Coordinator, when
     // they receive a contribution from a contributor
-    pub fn verify_update(
-        before: &Accumulator,
-        after: &Accumulator,
-        update_proof: &UpdateProof,
-    ) -> bool {
-        Accumulator::verify_updates(before, after, &[*update_proof])
+    pub fn verify_update(before: &SRS, after: &SRS, update_proof: &UpdateProof) -> bool {
+        SRS::verify_updates(before, after, &[*update_proof])
     }
 
     // Inefficiently checks that the srs has the correct structure
@@ -217,13 +210,13 @@ fn vandemonde_challenge(x: Fr, n: usize) -> Vec<Fr> {
 fn reject_private_key_zero() {
     // This test ensures that one cannot update the SRS using 0
 
-    let before = Accumulator::new_for_kzg(100);
+    let before = SRS::new_for_kzg(100);
     let mut after = before.clone();
 
     let secret = PrivateKey::from_u64(0);
     let update_proof = after.update(secret);
 
-    assert!(!Accumulator::verify_update(&before, &after, &update_proof));
+    assert!(!SRS::verify_update(&before, &after, &update_proof));
 }
 
 #[test]
@@ -232,7 +225,7 @@ fn acc_smoke() {
     let secret_b = PrivateKey::from_u64(512);
     let secret_c = PrivateKey::from_u64(789);
 
-    let mut acc = Accumulator::new_for_kzg(100);
+    let mut acc = SRS::new_for_kzg(100);
 
     // Simulate 3 participants updating the accumulator, one after the other
     let before_update_1_degree_1 = acc.tau_g1[1];
