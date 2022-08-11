@@ -10,7 +10,7 @@ authors = ["Kevaundray Wedderburn"]
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand_chacha = { version = "0.3.1" }
 rand = { version = "0.8.4" }
-rayon = "1.0"
+rayon = { version = "1.0", optional = true }
 itertools = "0.10.1"
 sha2 = "0.10.2"
 ark-ec = { version = "0.3", default-features = false }
@@ -31,5 +31,5 @@ harness = false
 
 [features]
 default = ["parallel", "asm"]
-parallel = ["ark-ff/parallel", "ark-poly/parallel", "ark-ec/parallel"]
+parallel = ["ark-ff/parallel", "ark-poly/parallel", "ark-ec/parallel", "rayon"]
 asm = ["ark-ff/asm"]
