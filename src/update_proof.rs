@@ -15,12 +15,11 @@ pub struct UpdateProof {
 }
 
 impl UpdateProof {
+    // Verifies a list of update of update proofs using `SharedSecretChain` as a subroutine
     pub(crate) fn verify_chain(
         starting_point: G1Projective,
         update_proofs: &[UpdateProof],
     ) -> bool {
-        assert!(!update_proofs.is_empty(), "no update proofs are present");
-
         let mut chain = SharedSecretChain::starting_from(starting_point);
 
         for update_proof in update_proofs {
