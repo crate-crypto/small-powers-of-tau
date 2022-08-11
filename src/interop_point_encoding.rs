@@ -48,7 +48,7 @@ fn deserialise_fq(bytes: [u8; 48]) -> Fq {
     Fq::from_repr(tmp).unwrap()
 }
 
-pub fn deserialize_g1(bytes: [u8; 48]) -> G1Affine {
+pub fn deserialize_g1(bytes: [u8; 48]) -> Option<G1Affine> {
     // Obtain the three flags from the start of the byte sequence
     let flags = EncodingFlags::get_flags(&bytes[..]);
 
@@ -57,7 +57,7 @@ pub fn deserialize_g1(bytes: [u8; 48]) -> G1Affine {
     }
 
     if flags.is_infinity {
-        return G1Affine::default();
+        return Some(G1Affine::default());
     }
     // Attempt to obtain the x-coordinate
     let x = {
@@ -70,16 +70,15 @@ pub fn deserialize_g1(bytes: [u8; 48]) -> G1Affine {
         deserialise_fq(tmp)
     };
 
-    G1Affine::get_point_from_x(x, flags.is_lexographically_largest).unwrap()
+    G1Affine::get_point_from_x(x, flags.is_lexographically_largest)
 }
 
-// TODO: return optional here instead
-pub fn deserialize_g2(bytes: [u8; 96]) -> G2Affine {
+pub fn deserialize_g2(bytes: [u8; 96]) -> Option<G2Affine> {
     // Obtain the three flags from the start of the byte sequence
     let flags = EncodingFlags::get_flags(&bytes);
 
     if flags.is_infinity {
-        return G2Affine::default();
+        return Some(G2Affine::default());
     }
     if !flags.is_compressed {
         unimplemented!("uncompressed serialisation is not implemented")
@@ -104,7 +103,7 @@ pub fn deserialize_g2(bytes: [u8; 96]) -> G2Affine {
 
     let x = Fp2::new(xc0, xc1);
 
-    G2Affine::get_point_from_x(x, flags.is_lexographically_largest).unwrap()
+    G2Affine::get_point_from_x(x, flags.is_lexographically_largest)
 }
 
 struct EncodingFlags {
@@ -140,21 +139,6 @@ impl EncodingFlags {
         }
     }
 }
-
-// fn add_encoding(result: &mut [u8], is_inf: bool, positive_y: bool) {
-//     // add compression flag
-//     result[0] |= 1 << 7;
-
-//     if is_inf {
-//         result[0] |= 1 << 6;
-//         return;
-//     }
-
-//     if positive_y {
-//         result[0] |= 1 << 5;
-//         return;
-//     }
-// }
 
 pub fn serialize_g1(p: &G1Affine) -> [u8; 48] {
     let mut result = serialize_g1_x(p);
@@ -198,11 +182,11 @@ mod test {
     #[test]
     fn test_serialize_deserialize() {
         let p = G1Affine::prime_subgroup_generator();
-        let got = deserialize_g1(serialize_g1(&p));
+        let got = deserialize_g1(serialize_g1(&p)).unwrap();
 
         assert_eq!(got, p);
         let p2 = G2Affine::prime_subgroup_generator();
-        let got = deserialize_g2(serialize_g2(&p2));
+        let got = deserialize_g2(serialize_g2(&p2)).unwrap();
         assert_eq!(got, p2);
     }
 }
