@@ -98,7 +98,13 @@ impl SRS {
     // was done correctly will collect all of the updates from the ceremony, along with
     // the starting and ending SRS in order to call this method.
     pub fn verify_updates(before: &SRS, after: &SRS, update_proofs: &[UpdateProof]) -> bool {
-        let last_update = update_proofs.last().expect("expected at least one update");
+        // If there are no update proofs and the user calls this method
+        // we return False regardless. Even if `before===after`
+        // We do not accept a transition without a proof
+        let last_update = match update_proofs.last() {
+            Some(update) => update,
+            None => return false,
+        };
 
         // 1. Check that the updates finished at the ending SRS
         if after.tau_g1[1] != last_update.new_accumulated_point {
