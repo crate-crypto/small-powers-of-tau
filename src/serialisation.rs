@@ -10,6 +10,27 @@ use std::io::Read;
 
 // TODO: use JSON serialisation strategy that is being used in the python specs
 
+fn g1_from_reader<R: Read>(reader: &mut R) -> Option<G1Affine> {
+    const G1_SERIALISED_SIZE: usize = 48;
+    let mut point_bytes = [0u8; G1_SERIALISED_SIZE];
+
+    reader.read_exact(&mut point_bytes).unwrap();
+    match deserialize_g1(point_bytes) {
+        Some(point) => return Some(point),
+        None => return None,
+    };
+}
+fn g2_from_reader<R: Read>(reader: &mut R) -> Option<G2Affine> {
+    const G2_SERIALISED_SIZE: usize = 96;
+    let mut point_bytes = [0u8; G2_SERIALISED_SIZE];
+
+    reader.read_exact(&mut point_bytes).unwrap();
+    match deserialize_g2(point_bytes) {
+        Some(point) => return Some(point),
+        None => return None,
+    };
+}
+
 impl SRS {
     pub fn serialise(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
@@ -32,7 +53,7 @@ impl SRS {
 
     // We do not check if the point is the identity when deserialising
     // What we do check, is that every point is a point on the curve
-    pub fn deserialise(bytes: &[u8], parameters: Parameters) -> Result<Self, ()> {
+    pub fn deserialise(bytes: &[u8], parameters: Parameters) -> Option<Self> {
         // TODO: We need to deserialise into affine representation because arkworks does not have `is_on_curve` and `subgroup_check` for Projective representation
         // TODO: its possible to deserialise and then do the checks first, then store it in the
         // TODO: vector
@@ -42,23 +63,15 @@ impl SRS {
         let mut reader = std::io::Cursor::new(bytes);
 
         for element in g1.iter_mut() {
-            let mut point_bytes = [0u8; 48];
-            reader.read_exact(&mut point_bytes).unwrap();
-            match deserialize_g1(point_bytes) {
-                Some(des_point) => *element = des_point,
-                None => return Err(()),
-            };
+            let deserialised_point = g1_from_reader(&mut reader)?;
+            *element = deserialised_point
         }
         for element in g2.iter_mut() {
-            let mut point_bytes = [0u8; 96];
-            reader.read_exact(&mut point_bytes).unwrap();
-            match deserialize_g2(point_bytes) {
-                Some(des_point) => *element = des_point,
-                None => return Err(()),
-            };
+            let deserialised_point = g2_from_reader(&mut reader)?;
+            *element = deserialised_point
         }
 
-        Ok(SRS {
+        Some(SRS {
             tau_g1: g1
                 .into_iter()
                 .map(|element| element.into_projective())
@@ -82,26 +95,24 @@ impl UpdateProof {
 
         bytes
     }
-    pub fn deserialise(bytes: &[u8]) -> Self {
+    pub fn deserialise(bytes: &[u8]) -> Option<Self> {
         let mut reader = std::io::Cursor::new(bytes);
 
-        let mut point_bytes = [0u8; 96];
-        reader.read_exact(&mut point_bytes).unwrap();
-        let commitment_to_secret = deserialize_g2(point_bytes).unwrap();
-        let commitment_to_secret = commitment_to_secret.into_projective();
+        let commitment_to_secret = g2_from_reader(&mut reader)?.into_projective();
+        let new_accumulated_point = g1_from_reader(&mut reader)?.into_projective();
 
-        let mut point_bytes = [0u8; 48];
-        reader.read_exact(&mut point_bytes).unwrap();
-        let new_accumulated_point = deserialize_g1(point_bytes).unwrap();
-        let new_accumulated_point = new_accumulated_point.into_projective();
+        // TODO: should we move these checks into the SRS checks that need to be done?
+        if commitment_to_secret.is_zero() {
+            return None;
+        }
+        if new_accumulated_point.is_zero() {
+            return None;
+        }
 
-        assert!(!commitment_to_secret.is_zero());
-        assert!(!new_accumulated_point.is_zero());
-
-        UpdateProof {
+        Some(UpdateProof {
             commitment_to_secret,
             new_accumulated_point,
-        }
+        })
     }
 }
 
@@ -123,7 +134,7 @@ mod tests {
         };
 
         let bytes = proof.serialise();
-        let deserialised_proof = UpdateProof::deserialise(&bytes);
+        let deserialised_proof = UpdateProof::deserialise(&bytes).unwrap();
 
         assert_eq!(proof, deserialised_proof)
     }
