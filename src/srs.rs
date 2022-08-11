@@ -281,17 +281,9 @@ mod tests {
         let before_update_1_degree_1 = acc.tau_g1[1];
         let update_proof_1 = acc.update(secret_a);
 
-        let before_update_2_degree_1 = acc.tau_g1[1];
         let update_proof_2 = acc.update(secret_b);
 
-        let before_update_3_degree_1 = acc.tau_g1[1];
         let update_proof_3 = acc.update(secret_c);
-
-        // This verifies each update proof makes the correct transition, but it does not link
-        // the update proofs, so these could in theory be updates to different srs
-        assert!(update_proof_1.verify(before_update_1_degree_1));
-        assert!(update_proof_2.verify(before_update_2_degree_1));
-        assert!(update_proof_3.verify(before_update_3_degree_1));
 
         // Here we also verify the chain, if elements in the vector are out of place, the proof will also fail
         assert!(UpdateProof::verify_chain(
