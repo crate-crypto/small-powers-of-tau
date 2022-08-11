@@ -1,6 +1,6 @@
 use ark_bls12_381::{Fr, G1Projective, G2Projective};
 use ark_ec::{PairingEngine, ProjectiveCurve};
-use ark_ff::{Field, PrimeField, Zero};
+use ark_ff::{Field, One, PrimeField, Zero};
 
 use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 
@@ -215,6 +215,19 @@ fn reject_private_key_zero() {
     let update_proof = after.update(secret);
 
     assert!(!SRS::verify_update(&before, &after, &update_proof));
+}
+#[test]
+fn zero_pow_zero() {
+    // This test checks that 0^0  = 1
+    // This can only happen if a user decides to use 0 as their private key
+    // which is rejected anyways. This is only needed for tests.
+    //
+    // Note that in the wnaf update method, we do not modify the degree-0 element
+    // which has the same effect when 0^0 = 1
+    let secret = PrivateKey::from_u64(0);
+    let value = secret.tau.pow(&[0]);
+
+    assert!(value.is_one())
 }
 
 #[test]
