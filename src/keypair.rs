@@ -21,6 +21,12 @@ impl PrivateKey {
             tau: Fr::rand(&mut rand),
         }
     }
+    // Creates a private key using bytes
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        PrivateKey {
+            tau: Fr::from_be_bytes_mod_order(bytes),
+        }
+    }
 }
 
 impl PrivateKey {
