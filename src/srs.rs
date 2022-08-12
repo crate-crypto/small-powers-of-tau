@@ -171,14 +171,18 @@ impl SRS {
 
     // We detail the algorithm here: https://hackmd.io/C0lk1xyWQryGggRlNYDqZw#Appendix-1---Incremental-powers-of-tau-check-Batching
     // This allows us to check that the SRS has the correct structure using only 1 pairing
-    fn structure_check_opt(&self, random_element: Fr) -> bool {
+    pub fn structure_check_opt(&self, random_element: Fr) -> bool {
         // Check will always pass if the random element is zero
         // We return false in this case
         if random_element.is_zero() {
             return false;
         }
-        let max_number_elements = std::cmp::max(self.tau_g1.len(), self.tau_g2.len());
-        let rand_pow = vandemonde_challenge(random_element, max_number_elements - 2);
+
+        let len_g1 = self.tau_g1.len();
+        let len_g2 = self.tau_g2.len();
+
+        let max_number_elements = std::cmp::max(len_g1, len_g2);
+        let rand_pow = vandemonde_challenge(random_element, max_number_elements);
 
         let tau_g2_0 = self.tau_g2[0];
         let tau_g2_1 = self.tau_g2[1];
@@ -191,21 +195,20 @@ impl SRS {
             .map(|scalar| scalar.into_repr())
             .collect_vec();
 
-        let mut L = self.tau_g1.clone();
-        L.pop();
-        let mut R = self.tau_g1.clone();
-        R.remove(0);
+        // All elements in G1 except the last element
+        let L = &self.tau_g1[0..len_g1 - 1];
+        assert_eq!(L.len(), len_g1 - 1);
+
+        // All elements in G1 except the first element
+        let R = &self.tau_g1[1..];
+        assert_eq!(R.len(), len_g1 - 1);
 
         let L_comm = VariableBaseMSM::multi_scalar_mul(
-            &L.into_iter()
-                .map(|element| element.into_affine())
-                .collect_vec(),
+            &L.iter().map(|element| element.into_affine()).collect_vec(),
             &scalars,
         );
         let R_comm = VariableBaseMSM::multi_scalar_mul(
-            &R.into_iter()
-                .map(|element| element.into_affine())
-                .collect_vec(),
+            &R.iter().map(|element| element.into_affine()).collect_vec(),
             &scalars,
         );
         let p1 = ark_bls12_381::Bls12_381::pairing(L_comm, tau_g2_1);
@@ -217,21 +220,20 @@ impl SRS {
 
         // Check G2
 
-        let mut L = self.tau_g2.clone();
-        L.pop();
-        let mut R = self.tau_g2.clone();
-        R.remove(0);
+        // All elements in G2 except the last element
+        let L = &self.tau_g2[0..len_g2 - 1];
+        assert_eq!(L.len(), len_g2 - 1);
+
+        // All elements in G2 except the first element
+        let R = &self.tau_g2[1..];
+        assert_eq!(R.len(), len_g2 - 1);
 
         let L_comm = VariableBaseMSM::multi_scalar_mul(
-            &L.into_iter()
-                .map(|element| element.into_affine())
-                .collect_vec(),
+            &L.iter().map(|element| element.into_affine()).collect_vec(),
             &scalars,
         );
         let R_comm = VariableBaseMSM::multi_scalar_mul(
-            &R.into_iter()
-                .map(|element| element.into_affine())
-                .collect_vec(),
+            &R.iter().map(|element| element.into_affine()).collect_vec(),
             &scalars,
         );
 
