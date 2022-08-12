@@ -1,6 +1,7 @@
 use ark_bls12_381::{Fr, G1Projective, G2Projective};
-use ark_ec::{PairingEngine, ProjectiveCurve};
-use ark_ff::Zero;
+use ark_ec::{msm::VariableBaseMSM, PairingEngine, ProjectiveCurve};
+use ark_ff::{PrimeField, Zero};
+use itertools::Itertools;
 
 use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 
@@ -168,6 +169,78 @@ impl SRS {
         SRS::verify_updates(before, after, &[*update_proof])
     }
 
+    // We detail the algorithm here: https://hackmd.io/C0lk1xyWQryGggRlNYDqZw#Appendix-1---Incremental-powers-of-tau-check-Batching
+    // This allows us to check that the SRS has the correct structure using only 1 pairing
+    fn structure_check_opt(&self, random_element: Fr) -> bool {
+        // Check will always pass if the random element is zero
+        // We return false in this case
+        if random_element.is_zero() {
+            return false;
+        }
+        let max_number_elements = std::cmp::max(self.tau_g1.len(), self.tau_g2.len());
+        let rand_pow = vandemonde_challenge(random_element, max_number_elements - 2);
+
+        let tau_g2_0 = self.tau_g2[0];
+        let tau_g2_1 = self.tau_g2[1];
+
+        let tau_g1_0 = self.tau_g1[0];
+        let tau_g1_1 = self.tau_g1[1];
+
+        let scalars = rand_pow
+            .into_iter()
+            .map(|scalar| scalar.into_repr())
+            .collect_vec();
+
+        let mut L = self.tau_g1.clone();
+        L.pop();
+        let mut R = self.tau_g1.clone();
+        R.remove(0);
+
+        let L_comm = VariableBaseMSM::multi_scalar_mul(
+            &L.into_iter()
+                .map(|element| element.into_affine())
+                .collect_vec(),
+            &scalars,
+        );
+        let R_comm = VariableBaseMSM::multi_scalar_mul(
+            &R.into_iter()
+                .map(|element| element.into_affine())
+                .collect_vec(),
+            &scalars,
+        );
+        let p1 = ark_bls12_381::Bls12_381::pairing(L_comm, tau_g2_1);
+        let p2 = ark_bls12_381::Bls12_381::pairing(R_comm, tau_g2_0);
+
+        if p1 != p2 {
+            return false;
+        }
+
+        // Check G2
+
+        let mut L = self.tau_g2.clone();
+        L.pop();
+        let mut R = self.tau_g2.clone();
+        R.remove(0);
+
+        let L_comm = VariableBaseMSM::multi_scalar_mul(
+            &L.into_iter()
+                .map(|element| element.into_affine())
+                .collect_vec(),
+            &scalars,
+        );
+        let R_comm = VariableBaseMSM::multi_scalar_mul(
+            &R.into_iter()
+                .map(|element| element.into_affine())
+                .collect_vec(),
+            &scalars,
+        );
+
+        let p1 = ark_bls12_381::Bls12_381::pairing(tau_g1_1, L_comm);
+        let p2 = ark_bls12_381::Bls12_381::pairing(tau_g1_0, R_comm);
+
+        p1 == p2
+    }
+
     // Inefficiently checks that the srs has the correct structure
     // Meaning each subsequent element is increasing the index of tau for both G_1 and G_2 elements
     fn structure_check(&self) -> bool {
@@ -290,5 +363,14 @@ mod tests {
             before_update_1_degree_1,
             &[update_proof_1, update_proof_2, update_proof_3,]
         ));
+    }
+
+    #[test]
+    fn structure_checks_probabilistic() {
+        let secret_a = PrivateKey::from_u64(252);
+
+        let mut acc = SRS::new_for_kzg(100);
+        acc.update(secret_a);
+        assert!(acc.structure_check_opt(Fr::from(100u64)));
     }
 }
