@@ -10,6 +10,9 @@ use ark_ec::{AffineCurve, ProjectiveCurve};
 
 impl SRS {
     pub fn serialise(&self) -> Vec<u8> {
+        self.to_bytes()
+    }
+    fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         let g1_points_affine = G1Projective::batch_normalization_into_affine(&self.tau_g1);
@@ -29,6 +32,9 @@ impl SRS {
     // We do not check if the point is the identity when deserialising
     // What we do check, is that every point is a point on the curve
     pub fn deserialise(bytes: &[u8], parameters: Parameters) -> Option<Self> {
+        SRS::from_bytes(bytes, parameters)
+    }
+    fn from_bytes(bytes: &[u8], parameters: Parameters) -> Option<Self> {
         let mut g1 = vec![G1Projective::default(); parameters.num_g1_elements_needed];
         let mut g2 = vec![G2Projective::default(); parameters.num_g2_elements_needed];
 
@@ -52,6 +58,9 @@ impl SRS {
 
 impl UpdateProof {
     pub fn serialise(&self) -> Vec<u8> {
+        self.to_bytes()
+    }
+    fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
         let public_key_bytes = serialize_g2(&self.commitment_to_secret.into_affine());
         let update_point_bytes = serialize_g1(&self.new_accumulated_point.into_affine());
@@ -62,6 +71,9 @@ impl UpdateProof {
         bytes
     }
     pub fn deserialise(bytes: &[u8]) -> Option<Self> {
+        UpdateProof::from_bytes(bytes)
+    }
+    fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let mut reader = std::io::Cursor::new(bytes);
 
         let commitment_to_secret = g2_from_reader(&mut reader)?.into_projective();
