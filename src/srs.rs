@@ -9,8 +9,8 @@ use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 // in G1 and G2
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SRS {
-    pub(crate) tau_g1: Vec<G1Projective>,
-    pub(crate) tau_g2: Vec<G2Projective>,
+    tau_g1: Vec<G1Projective>,
+    tau_g2: Vec<G2Projective>,
 }
 #[derive(Debug, Clone, Copy)]
 pub struct Parameters {
@@ -20,17 +20,28 @@ pub struct Parameters {
 impl SRS {
     // Creates a powers of tau ceremony.
     // This is not compatible with the BGM17 Groth16 powers of tau ceremony (notice there is no \alpha, \beta)
-    pub fn new(parameters: Parameters) -> SRS {
-        Self {
-            tau_g1: vec![
-                G1Projective::prime_subgroup_generator();
-                parameters.num_g1_elements_needed
-            ],
-            tau_g2: vec![
-                G2Projective::prime_subgroup_generator();
-                parameters.num_g2_elements_needed
-            ],
+    pub fn new(parameters: Parameters) -> Option<SRS> {
+        let g1s = vec![G1Projective::prime_subgroup_generator(); parameters.num_g1_elements_needed];
+        let g2s = vec![G2Projective::prime_subgroup_generator(); parameters.num_g2_elements_needed];
+        SRS::from_vectors(g1s, g2s)
+    }
+    pub fn from_vectors(g1s: Vec<G1Projective>, g2s: Vec<G2Projective>) -> Option<SRS> {
+        let cond = g1s.len() > 1 && g2s.len() > 1;
+        if !cond {
+            return None;
+        } else {
+            Some(SRS {
+                tau_g1: g1s,
+                tau_g2: g2s,
+            })
         }
+    }
+
+    pub fn g1_elements(&self) -> &[G1Projective] {
+        &self.tau_g1
+    }
+    pub fn g2_elements(&self) -> &[G2Projective] {
+        &self.tau_g2
     }
 
     // Creates a ceremony for the kzg polynomial commitment scheme
@@ -51,7 +62,7 @@ impl SRS {
             num_g2_elements_needed: NUM_G2_ELEMENTS_NEEDED,
         };
 
-        SRS::new(params)
+        SRS::new(params).unwrap()
     }
 
     // Updates the srs and produces a proof of this update
@@ -72,7 +83,7 @@ impl SRS {
 
         let max_number_elements = std::cmp::max(self.tau_g1.len(), self.tau_g2.len());
 
-        let powers_of_priv_key = vandemonde_challenge(private_key, max_number_elements);
+        let powers_of_priv_key = vandemonde_challenge(private_key, max_number_elements - 1);
 
         let wnaf = WnafContext::new(3);
 

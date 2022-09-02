@@ -35,10 +35,10 @@ pub fn update_transcript(
 ) -> Option<(Transcript, [UpdateProof; NUM_CEREMONIES])> {
     // Check that the parameters for each SRS is correct
     for (srs, params) in transcript.sub_ceremonies.iter().zip(CEREMONIES.into_iter()) {
-        if srs.tau_g1.len() != params.num_g1_elements_needed {
+        if srs.g1_elements().len() != params.num_g1_elements_needed {
             return None;
         }
-        if srs.tau_g2.len() != params.num_g2_elements_needed {
+        if srs.g2_elements().len() != params.num_g2_elements_needed {
             return None;
         }
     }

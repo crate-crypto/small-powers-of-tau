@@ -1,6 +1,6 @@
 use crate::interop_point_encoding::{
-    deserialize_g1, deserialize_g2, g1_from_reader, g2_from_reader, serialize_g1, serialize_g2,
-    G1_SERIALISED_SIZE, G2_SERIALISED_SIZE,
+    deserialize_g1, deserialize_g2, serialize_g1, serialize_g2, G1_SERIALISED_SIZE,
+    G2_SERIALISED_SIZE,
 };
 use crate::{
     srs::{Parameters, SRS},
@@ -40,28 +40,13 @@ impl SRS {
     pub fn serialise(&self) -> (Vec<String>, Vec<String>) {
         self.to_json_array()
     }
-    fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
 
-        let g1_points_affine = G1Projective::batch_normalization_into_affine(&self.tau_g1);
-        let g2_points_affine = G2Projective::batch_normalization_into_affine(&self.tau_g2);
-
-        for point in &g1_points_affine {
-            bytes.extend(serialize_g1(point));
-        }
-
-        for point in &g2_points_affine {
-            bytes.extend(serialize_g2(point));
-        }
-
-        bytes
-    }
     fn to_json_array(&self) -> (Vec<String>, Vec<String>) {
         let mut g1_points_json = Vec::new();
         let mut g2_points_json = Vec::new();
 
-        let g1_points_affine = G1Projective::batch_normalization_into_affine(&self.tau_g1);
-        let g2_points_affine = G2Projective::batch_normalization_into_affine(&self.tau_g2);
+        let g1_points_affine = G1Projective::batch_normalization_into_affine(self.g1_elements());
+        let g2_points_affine = G2Projective::batch_normalization_into_affine(self.g2_elements());
 
         for point in &g1_points_affine {
             let mut point_as_hex = hex::encode(serialize_g1(point));
@@ -86,26 +71,7 @@ impl SRS {
     ) -> Option<Self> {
         SRS::from_json_array(json_arr, parameters)
     }
-    fn from_bytes(bytes: &[u8], parameters: Parameters) -> Option<Self> {
-        let mut g1 = vec![G1Projective::default(); parameters.num_g1_elements_needed];
-        let mut g2 = vec![G2Projective::default(); parameters.num_g2_elements_needed];
 
-        let mut reader = std::io::Cursor::new(bytes);
-
-        for element in g1.iter_mut() {
-            let deserialised_point = g1_from_reader(&mut reader)?;
-            *element = deserialised_point.into_projective()
-        }
-        for element in g2.iter_mut() {
-            let deserialised_point = g2_from_reader(&mut reader)?;
-            *element = deserialised_point.into_projective()
-        }
-
-        Some(SRS {
-            tau_g1: g1,
-            tau_g2: g2,
-        })
-    }
     fn from_json_array(
         json_array: (Vec<String>, Vec<String>),
         parameters: Parameters,
@@ -128,10 +94,7 @@ impl SRS {
             return None;
         }
 
-        Some(SRS {
-            tau_g1: g1,
-            tau_g2: g2,
-        })
+        SRS::from_vectors(g1, g2)
     }
 }
 
@@ -139,16 +102,7 @@ impl UpdateProof {
     pub fn serialise(&self) -> [String; 2] {
         self.to_json_array()
     }
-    fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
-        let public_key_bytes = serialize_g2(&self.commitment_to_secret.into_affine());
-        let update_point_bytes = serialize_g1(&self.new_accumulated_point.into_affine());
 
-        bytes.extend(public_key_bytes);
-        bytes.extend(update_point_bytes);
-
-        bytes
-    }
     fn to_json_array(&self) -> [String; 2] {
         let mut a = hex::encode(serialize_g2(&self.commitment_to_secret.into_affine()));
         a.insert_str(0, "0x");
@@ -161,17 +115,7 @@ impl UpdateProof {
     pub fn deserialise(json_array: [String; 2]) -> Option<Self> {
         UpdateProof::from_json_array(json_array)
     }
-    fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        let mut reader = std::io::Cursor::new(bytes);
 
-        let commitment_to_secret = g2_from_reader(&mut reader)?.into_projective();
-        let new_accumulated_point = g1_from_reader(&mut reader)?.into_projective();
-
-        Some(UpdateProof {
-            commitment_to_secret,
-            new_accumulated_point,
-        })
-    }
     fn from_json_array(points_json_arr: [String; 2]) -> Option<Self> {
         let commitment_to_secret = hex_string_to_g2(&points_json_arr[0])?;
         let new_accumulated_point = hex_string_to_g1(&points_json_arr[1])?;
@@ -214,7 +158,7 @@ mod tests {
         };
 
         let secret = PrivateKey::from_u64(5687);
-        let mut acc = SRS::new(params);
+        let mut acc = SRS::new(params).unwrap();
         acc.update(secret);
 
         let bytes = acc.serialise();
