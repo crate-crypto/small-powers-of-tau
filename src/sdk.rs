@@ -4,7 +4,7 @@ use crate::{
     update_proof::UpdateProof,
 };
 
-const NUM_CEREMONIES: usize = 4;
+pub const NUM_CEREMONIES: usize = 4;
 
 pub const CEREMONIES: [Parameters; NUM_CEREMONIES] = [
     Parameters {
