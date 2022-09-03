@@ -81,6 +81,8 @@ impl SRS {
     // Updates the group elements using a users private key
     fn update_srs(&mut self, private_key: Fr) {
         use ark_ec::wnaf::WnafContext;
+
+        #[cfg(feature = "parallel")]
         use rayon::prelude::*;
 
         let max_number_elements = std::cmp::max(self.tau_g1.len(), self.tau_g2.len());
