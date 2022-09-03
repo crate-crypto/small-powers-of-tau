@@ -79,21 +79,26 @@ pub struct TranscriptJSON {
     pub sub_ceremonies: [SRSJson; NUM_CEREMONIES],
 }
 
-impl From<Transcript> for TranscriptJSON {
-    fn from(transcript: Transcript) -> Self {
-        let sub_ceremonies_json = transcript.sub_ceremonies.map(|srs| SRSJson::from(srs));
+impl From<&Transcript> for TranscriptJSON {
+    fn from(transcript: &Transcript) -> Self {
+        let sub_ceremonies_json = transcript
+            .sub_ceremonies
+            // TODO: can remove clone but will need to try_into for array size
+            .clone()
+            .map(|srs| SRSJson::from(&srs));
         Self {
             sub_ceremonies: sub_ceremonies_json,
         }
     }
 }
 
-impl From<TranscriptJSON> for Option<Transcript> {
-    fn from(transcript_json: TranscriptJSON) -> Self {
+impl From<&TranscriptJSON> for Option<Transcript> {
+    fn from(transcript_json: &TranscriptJSON) -> Self {
         // TODO: find a cleaner way to write this
         let sub_ceremonies_option: [Option<SRS>; NUM_CEREMONIES] = transcript_json
             .sub_ceremonies
-            .map(|srs_json| srs_json.into());
+            .clone()
+            .map(|srs_json| (&srs_json).into());
 
         let mut sub_ceremonies = Vec::new();
 

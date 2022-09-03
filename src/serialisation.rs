@@ -79,17 +79,11 @@ impl SRS {
 
     // We do not check if the point is the identity when deserialising
     // What we do check, is that every point is a point on the curve
-    pub fn deserialise(
-        json_arr: (Vec<String>, Vec<String>),
-        parameters: Parameters,
-    ) -> Option<Self> {
+    pub fn deserialise(json_arr: (&[String], &[String]), parameters: Parameters) -> Option<Self> {
         SRS::from_json_array(json_arr, parameters)
     }
 
-    fn from_json_array(
-        json_array: (Vec<String>, Vec<String>),
-        parameters: Parameters,
-    ) -> Option<Self> {
+    fn from_json_array(json_array: (&[String], &[String]), parameters: Parameters) -> Option<Self> {
         let (g1_points_json_array, g2_points_json_array) = json_array;
         let mut g1 = vec![];
         let mut g2 = vec![];
@@ -141,7 +135,7 @@ impl UpdateProof {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SRSJson {
     #[serde(rename = "numG1Powers")]
     num_g1_powers: usize,
@@ -153,8 +147,8 @@ pub struct SRSJson {
     g2_powers: Vec<String>,
 }
 
-impl From<SRS> for SRSJson {
-    fn from(srs: SRS) -> Self {
+impl From<&SRS> for SRSJson {
+    fn from(srs: &SRS) -> Self {
         let g1s = srs.g1_elements();
         let g2s = srs.g2_elements();
 
@@ -166,13 +160,13 @@ impl From<SRS> for SRSJson {
         }
     }
 }
-impl From<SRSJson> for Option<SRS> {
-    fn from(srs: SRSJson) -> Self {
+impl From<&SRSJson> for Option<SRS> {
+    fn from(srs: &SRSJson) -> Self {
         let parameters = Parameters {
             num_g1_elements_needed: srs.num_g1_powers,
             num_g2_elements_needed: srs.num_g2_powers,
         };
-        SRS::deserialise((srs.g1_powers, srs.g2_powers), parameters)
+        SRS::deserialise((&srs.g1_powers, &srs.g2_powers), parameters)
     }
 }
 #[cfg(test)]
@@ -210,7 +204,7 @@ mod tests {
         acc.update(secret);
 
         let bytes = acc.serialise();
-        let deserialised_srs = SRS::deserialise(bytes, params).unwrap();
+        let deserialised_srs = SRS::deserialise((&bytes.0, &bytes.1), params).unwrap();
 
         assert_eq!(acc, deserialised_srs);
     }
