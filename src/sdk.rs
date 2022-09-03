@@ -6,7 +6,7 @@ use crate::{
 
 const NUM_CEREMONIES: usize = 4;
 
-const CEREMONIES: [Parameters; NUM_CEREMONIES] = [
+pub const CEREMONIES: [Parameters; NUM_CEREMONIES] = [
     Parameters {
         num_g1_elements_needed: 4096,
         num_g2_elements_needed: 65,

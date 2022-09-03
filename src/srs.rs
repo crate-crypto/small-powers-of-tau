@@ -1,18 +1,20 @@
+use crate::{keypair::PrivateKey, update_proof::UpdateProof};
 use ark_bls12_381::{Fr, G1Projective, G2Projective};
 use ark_ec::{msm::VariableBaseMSM, PairingEngine, ProjectiveCurve};
 use ark_ff::{PrimeField, Zero};
 use itertools::Itertools;
 
-use crate::{keypair::PrivateKey, update_proof::UpdateProof};
-
 // Structured Reference String. Stores the powers of tau
 // in G1 and G2
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SRS {
+    // #[serde(serialize_with = "serialize_vec_g1s", rename = "G1Powers")]
     tau_g1: Vec<G1Projective>,
+    // #[serde(serialize_with = "serialize_vec_g2s", rename = "G2Powers")]
     tau_g2: Vec<G2Projective>,
 }
-#[derive(Debug, Clone, Copy)]
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Parameters {
     pub num_g1_elements_needed: usize,
     pub num_g2_elements_needed: usize,
