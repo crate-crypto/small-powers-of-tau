@@ -33,9 +33,12 @@ pub struct Transcript {
 }
 
 pub fn update_transcript(
-    mut transcript: Transcript,
+    transcript_json: TranscriptJSON,
     secrets: [String; NUM_CEREMONIES],
 ) -> Option<(Transcript, [UpdateProof; NUM_CEREMONIES])> {
+    let transcript: Option<Transcript> = (&transcript_json).into();
+    let mut transcript = transcript?;
+
     // Check that the parameters for each SRS is correct
     for (srs, params) in transcript.sub_ceremonies.iter().zip(CEREMONIES.into_iter()) {
         if srs.g1_elements().len() != params.num_g1_elements_needed {
@@ -65,7 +68,13 @@ pub fn update_transcript(
     Some((transcript, update_proofs))
 }
 
-pub fn transcript_subgroup_check(transcript: Transcript) -> bool {
+pub fn transcript_subgroup_check(transcript_json: TranscriptJSON) -> bool {
+    let transcript: Option<Transcript> = (&transcript_json).into();
+
+    let transcript = match transcript {
+        Some(transcript) => transcript,
+        None => return false,
+    };
     for srs in &transcript.sub_ceremonies {
         if !srs.subgroup_check() {
             return false;
