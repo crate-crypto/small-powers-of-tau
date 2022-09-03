@@ -2,6 +2,8 @@ use crate::interop_point_encoding::{
     deserialize_g1, deserialize_g2, serialize_g1, serialize_g2, G1_SERIALISED_SIZE,
     G2_SERIALISED_SIZE,
 };
+use serde::{Deserialize, Serialize};
+
 use crate::{
     srs::{Parameters, SRS},
     update_proof::UpdateProof,
@@ -41,12 +43,10 @@ impl SRS {
         self.to_json_array()
     }
 
-    fn to_json_array(&self) -> (Vec<String>, Vec<String>) {
+    fn g1s_to_json_array(g1s: &[G1Projective]) -> Vec<String> {
         let mut g1_points_json = Vec::new();
-        let mut g2_points_json = Vec::new();
 
-        let g1_points_affine = G1Projective::batch_normalization_into_affine(self.g1_elements());
-        let g2_points_affine = G2Projective::batch_normalization_into_affine(self.g2_elements());
+        let g1_points_affine = G1Projective::batch_normalization_into_affine(g1s);
 
         for point in &g1_points_affine {
             let mut point_as_hex = hex::encode(serialize_g1(point));
@@ -54,11 +54,25 @@ impl SRS {
             g1_points_json.push(point_as_hex)
         }
 
+        g1_points_json
+    }
+    fn g2s_to_json_array(g2s: &[G2Projective]) -> Vec<String> {
+        let mut g2_points_json = Vec::new();
+
+        let g2_points_affine = G2Projective::batch_normalization_into_affine(g2s);
+
         for point in &g2_points_affine {
             let mut point_as_hex = hex::encode(serialize_g2(point));
             point_as_hex.insert_str(0, "0x");
             g2_points_json.push(point_as_hex)
         }
+
+        g2_points_json
+    }
+
+    fn to_json_array(&self) -> (Vec<String>, Vec<String>) {
+        let g1_points_json = Self::g1s_to_json_array(self.g1_elements());
+        let g2_points_json = Self::g2s_to_json_array(self.g2_elements());
 
         (g1_points_json, g2_points_json)
     }
@@ -127,6 +141,40 @@ impl UpdateProof {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SRSJson {
+    #[serde(rename = "numG1Powers")]
+    num_g1_powers: usize,
+    #[serde(rename = "numG2Powers")]
+    num_g2_powers: usize,
+    #[serde(rename = "G1Powers")]
+    g1_powers: Vec<String>,
+    #[serde(rename = "G2Powers")]
+    g2_powers: Vec<String>,
+}
+
+impl From<SRS> for SRSJson {
+    fn from(srs: SRS) -> Self {
+        let g1s = srs.g1_elements();
+        let g2s = srs.g2_elements();
+
+        Self {
+            num_g1_powers: g1s.len(),
+            num_g2_powers: g2s.len(),
+            g1_powers: SRS::g1s_to_json_array(g1s),
+            g2_powers: SRS::g2s_to_json_array(g2s),
+        }
+    }
+}
+impl From<SRSJson> for Option<SRS> {
+    fn from(srs: SRSJson) -> Self {
+        let parameters = Parameters {
+            num_g1_elements_needed: srs.num_g1_powers,
+            num_g2_elements_needed: srs.num_g2_powers,
+        };
+        SRS::deserialise((srs.g1_powers, srs.g2_powers), parameters)
+    }
+}
 #[cfg(test)]
 mod tests {
     use crate::keypair::PrivateKey;
