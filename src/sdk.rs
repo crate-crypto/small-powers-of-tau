@@ -1,3 +1,6 @@
+use crate::serialisation::SRSJson;
+use serde::{Deserialize, Serialize};
+
 use crate::{
     keypair::PrivateKey,
     srs::{Parameters, SRS},
@@ -26,7 +29,7 @@ pub const CEREMONIES: [Parameters; NUM_CEREMONIES] = [
 ];
 
 pub struct Transcript {
-    sub_ceremonies: [SRS; NUM_CEREMONIES],
+    pub sub_ceremonies: [SRS; NUM_CEREMONIES],
 }
 
 pub fn update_transcript(
@@ -69,4 +72,40 @@ pub fn transcript_subgroup_check(transcript: Transcript) -> bool {
         }
     }
     true
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TranscriptJSON {
+    pub sub_ceremonies: [SRSJson; NUM_CEREMONIES],
+}
+
+impl From<Transcript> for TranscriptJSON {
+    fn from(transcript: Transcript) -> Self {
+        let sub_ceremonies_json = transcript.sub_ceremonies.map(|srs| SRSJson::from(srs));
+        Self {
+            sub_ceremonies: sub_ceremonies_json,
+        }
+    }
+}
+
+impl From<TranscriptJSON> for Option<Transcript> {
+    fn from(transcript_json: TranscriptJSON) -> Self {
+        // TODO: find a cleaner way to write this
+        let sub_ceremonies_option: [Option<SRS>; NUM_CEREMONIES] = transcript_json
+            .sub_ceremonies
+            .map(|srs_json| srs_json.into());
+
+        let mut sub_ceremonies = Vec::new();
+
+        for optional_srs in sub_ceremonies_option {
+            match optional_srs {
+                Some(srs) => sub_ceremonies.push(srs),
+                None => return None,
+            }
+        }
+
+        Some(Transcript {
+            sub_ceremonies: sub_ceremonies.try_into().unwrap(),
+        })
+    }
 }
