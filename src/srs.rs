@@ -45,6 +45,14 @@ impl SRS {
     pub fn g2_elements(&self) -> &[G2Projective] {
         &self.tau_g2
     }
+    // Returns the degree-1 element as a summary of the SRS
+    pub fn summary(&self) -> String {
+        let mut point_as_hex = hex::encode(crate::interop_point_encoding::serialize_g1(
+            &self.tau_g1[1].into_affine(),
+        ));
+        point_as_hex.insert_str(0, "0x");
+        point_as_hex
+    }
 
     // Creates a ceremony for the kzg polynomial commitment scheme
     // One should input the number of coefficients for the polynomial with the
