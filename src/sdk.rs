@@ -32,6 +32,19 @@ pub struct Transcript {
     pub sub_ceremonies: [SRS; NUM_CEREMONIES],
 }
 
+impl Default for Transcript {
+    fn default() -> Self {
+        Transcript {
+            sub_ceremonies: [
+                SRS::new(CEREMONIES[0]).unwrap(),
+                SRS::new(CEREMONIES[1]).unwrap(),
+                SRS::new(CEREMONIES[2]).unwrap(),
+                SRS::new(CEREMONIES[3]).unwrap(),
+            ],
+        }
+    }
+}
+
 pub fn update_transcript(
     mut transcript: Transcript,
     secrets: [String; NUM_CEREMONIES],
