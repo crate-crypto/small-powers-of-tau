@@ -122,7 +122,12 @@ impl SRS {
     // After the ceremony is over, an actor whom wants to verify that the ceremony was
     // was done correctly will collect all of the updates from the ceremony, along with
     // the starting and ending SRS in order to call this method.
-    pub fn verify_updates(before: &SRS, after: &SRS, update_proofs: &[UpdateProof]) -> bool {
+    pub fn verify_updates(
+        before: &SRS,
+        after: &SRS,
+        update_proofs: &[UpdateProof],
+        random_element: Fr,
+    ) -> bool {
         // If there are no update proofs and the user calls this method
         // we return False regardless. Even if `before===after`
         // We do not accept a transition without a proof
@@ -156,7 +161,7 @@ impl SRS {
         }
 
         // 3. Check that the new SRS goes up in incremental powers
-        if !after.structure_check() {
+        if !after.structure_check_opt(random_element) {
             return false;
         }
 
@@ -189,8 +194,13 @@ impl SRS {
     // Verify that a single update was applied to transition `before` to `after`
     // This method will be used during the Ceremony by the Coordinator, when
     // they receive a contribution from a contributor
-    pub fn verify_update(before: &SRS, after: &SRS, update_proof: &UpdateProof) -> bool {
-        SRS::verify_updates(before, after, &[*update_proof])
+    pub fn verify_update(
+        before: &SRS,
+        after: &SRS,
+        update_proof: &UpdateProof,
+        random_element: Fr,
+    ) -> bool {
+        SRS::verify_updates(before, after, &[*update_proof], random_element)
     }
 
     // We detail the algorithm here: https://hackmd.io/C0lk1xyWQryGggRlNYDqZw#Appendix-1---Incremental-powers-of-tau-check-Batching
@@ -327,7 +337,12 @@ mod tests {
         let secret = PrivateKey::from_u64(0);
         let update_proof = after.update(secret);
 
-        assert!(!SRS::verify_update(&before, &after, &update_proof));
+        assert!(!SRS::verify_update(
+            &before,
+            &after,
+            &update_proof,
+            Fr::from(123456789)
+        ));
     }
     #[test]
     fn zero_pow_zero() {

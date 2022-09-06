@@ -1,4 +1,6 @@
 use crate::serialisation::SRSJson;
+use ark_bls12_381::Fr;
+use ark_ff::{PrimeField, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -84,6 +86,41 @@ pub fn transcript_subgroup_check(transcript: Transcript) -> bool {
             return false;
         }
     }
+    true
+}
+
+pub fn transcript_verify_update(
+    old_transcript: &Transcript,
+    new_transcript: &Transcript,
+    update_proofs: &[UpdateProof; NUM_CEREMONIES],
+    random_hex_elements: [String; NUM_CEREMONIES],
+) -> bool {
+    for i in 0..NUM_CEREMONIES {
+        // Decode random hex string into a field element
+        //
+        //
+        let hex_str = &random_hex_elements[i];
+        let hex_str = if let Some(stripped_random_hex) = hex_str.strip_prefix("0x") {
+            stripped_random_hex
+        } else {
+            return false;
+        };
+
+        let element = match hex::decode(hex_str) {
+            Ok(bytes) => Fr::from_be_bytes_mod_order(&bytes),
+            Err(_) => return false,
+        };
+
+        // Verify update
+        //
+        let proof = update_proofs[i];
+        let before = &old_transcript.sub_ceremonies[i];
+        let after = &new_transcript.sub_ceremonies[i];
+        if !SRS::verify_update(before, after, &proof, element) {
+            return false;
+        };
+    }
+
     true
 }
 
