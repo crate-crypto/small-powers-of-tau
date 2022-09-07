@@ -16,9 +16,19 @@ pub struct SRS {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Parameters {
-    pub num_g1_elements_needed: usize,
-    pub num_g2_elements_needed: usize,
+    pub(crate) num_g1_elements_needed: usize,
+    pub(crate) num_g2_elements_needed: usize,
 }
+
+impl Parameters {
+    pub fn new(num_g1: usize, num_g2: usize) -> Self {
+        Parameters {
+            num_g1_elements_needed: num_g1,
+            num_g2_elements_needed: num_g2,
+        }
+    }
+}
+
 impl SRS {
     // Creates a powers of tau ceremony.
     // This is not compatible with the BGM17 Groth16 powers of tau ceremony (notice there is no \alpha, \beta)
@@ -216,7 +226,7 @@ impl SRS {
         let len_g2 = self.tau_g2.len();
 
         let max_number_elements = std::cmp::max(len_g1, len_g2);
-        let rand_pow = vandemonde_challenge(random_element, max_number_elements);
+        let rand_pow = vandemonde_challenge(random_element, max_number_elements - 1);
 
         let tau_g2_0 = self.tau_g2[0];
         let tau_g2_1 = self.tau_g2[1];
