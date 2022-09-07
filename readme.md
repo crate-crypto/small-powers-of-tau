@@ -29,19 +29,19 @@ In order to contribute to a ceremony, you need to:
     };
 
     let bytes = // Assuming you received the most recent SRS as a bytes
-    
+
     // Deserialise the bytes received to create the SRS
     // This method will ensure that the first points is in the correct group and that none of the points are zero
     let mut srs = SRS::deserialise(bytes, params);
 
     // Save the old SRS as we will do subgroup checks on it, after
-    // since we assume that the Coordinator is honest. 
+    // since we assume that the Coordinator is honest.
     let old_srs = srs.clone();
 
     // Create your private key
     let private_key = PrivateKey::rand(rng);
 
-    // Update the SRS creating an update proof 
+    // Update the SRS creating an update proof
     let update_proof = srs.update(private_key);
 
     // Send the SRS and update proof to the appropriate party
@@ -117,7 +117,40 @@ These are the actors who want to either check that their contributions were incl
     // If position is None/Nil then your contribution was not included. Else the position of your contribution will be returned.
 ````
 
-## License 
+
+### Install dependencies and tools
+
+1. Install [rust](https://www.rust-lang.org/tools/install)
+2. Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+
+
+## Build for browser-based deployment
+
+As of today, [module web workers are not available on the Firefox browser](https://bugzilla.mozilla.org/show_bug.cgi?id=1247687), therefore the compilation needs to be run twice in order to get a package for Chrome (and Chromium-based) browsers and Firefox browsers ([without bundles](https://github.com/GoogleChromeLabs/wasm-bindgen-rayon#usage-without-bundlers)).
+
+
+### NodeJS build
+
+1. Go to `Cargo.toml` in the root directory and check that `wasm-bindgen-rayon = "1.0"` is set.
+2. Run the command `wasm-pack build --target nodejs --out-dir pkg-node`
+3. The `pkg-node` folder will contain the necessary javascript and wasm modules to copy and run in Node JS.
+
+### Chrome build
+
+1. Go to `Cargo.toml` in the root directory and check that `wasm-bindgen-rayon = "1.0"` is set.
+2. Run the command `wasm-pack build --target web --out-dir pkg-chrome`
+3. The `pkg-chrome` folder will contain the necessary javascript and wasm modules to copy and run in a browser or React.
+
+### Firefox build
+
+1. Go to `Cargo.toml` in the root directory and check that `wasm-bindgen-rayon = { version = "1.0", features = ["no-bundler"] }` is set.
+2. Run the command `wasm-pack build --target web --out-dir pkg-firefox`
+3. The `pkg-firefox` folder will contain the necessary javascript and wasm modules to copy and run in a browser or React.
+
+Remember that you need both `pkg` for the application to work so copy both directories and rename them different (ex: `pkg-chrome` and `pkg-firefox`)
+
+
+## License
 
 This project is distributed under a dual license. (MIT/APACHE)
 
