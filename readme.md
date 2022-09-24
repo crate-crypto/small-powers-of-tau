@@ -1,8 +1,7 @@
 # Small Powers of Tau
 
-**This code has not been audited. Use at your own risk.**
 
-This implementation aims to target small non-Groth16 powers of tau ceremonies.
+This implementation aims to target small non-Groth16 powers of tau ceremonies. The code was audited by SECBIT Labs on September 20th, 2022. Checkout the report here: [https://github.com/ethereum/kzg-ceremony/blob/main/KZG10-Ceremony-audit-report.pdf]()
 
 ## Performance
 
@@ -116,39 +115,6 @@ These are the actors who want to either check that their contributions were incl
 
     // If position is None/Nil then your contribution was not included. Else the position of your contribution will be returned.
 ````
-
-
-### Install dependencies and tools
-
-1. Install [rust](https://www.rust-lang.org/tools/install)
-2. Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
-
-
-## Build for browser-based deployment
-
-As of today, [module web workers are not available on the Firefox browser](https://bugzilla.mozilla.org/show_bug.cgi?id=1247687), therefore the compilation needs to be run twice in order to get a package for Chrome (and Chromium-based) browsers and Firefox browsers ([without bundles](https://github.com/GoogleChromeLabs/wasm-bindgen-rayon#usage-without-bundlers)).
-
-
-### NodeJS build
-
-1. Go to `Cargo.toml` in the root directory and check that `wasm-bindgen-rayon = "1.0"` is set.
-2. Run the command `wasm-pack build --target nodejs --out-dir pkg-node`
-3. The `pkg-node` folder will contain the necessary javascript and wasm modules to copy and run in Node JS.
-
-### Chrome build
-
-1. Go to `Cargo.toml` in the root directory and check that `wasm-bindgen-rayon = "1.0"` is set.
-2. Run the command `wasm-pack build --target web --out-dir pkg-chrome`
-3. The `pkg-chrome` folder will contain the necessary javascript and wasm modules to copy and run in a browser or React.
-
-### Firefox build
-
-1. Go to `Cargo.toml` in the root directory and check that `wasm-bindgen-rayon = { version = "1.0", features = ["no-bundler"] }` is set.
-2. Run the command `wasm-pack build --target web --out-dir pkg-firefox`
-3. The `pkg-firefox` folder will contain the necessary javascript and wasm modules to copy and run in a browser or React.
-
-Remember that you need both `pkg` for the application to work so copy both directories and rename them different (ex: `pkg-chrome` and `pkg-firefox`)
-
 
 ## License
 
