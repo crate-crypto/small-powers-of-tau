@@ -4,19 +4,15 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Kevaundray Wedderburn"]
 description = "Small Powers of Tau"
-repository = "https://github.com/zkparty/small-powers-of-tau"
+repository = "https://github.com/crate-crypto/small-powers-of-tau"
 license = "ISC"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[lib]
-crate-type = ["cdylib", "lib"]
 
 [dependencies]
 
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand_chacha = { version = "0.3.1" }
 rand = { version = "0.8.4" }
-getrandom = { version = "0.2", features = ["js"] }
 rayon = { version = "1.0", optional = true }
 itertools = "0.10.1"
 ark-ec = { version = "0.3", default-features = false }
@@ -26,18 +22,6 @@ ark-std = "0.3.0"
 zeroize = { version = "1.5.7", features = ["zeroize_derive"] }
 hex = "0.4.3"
 serde = { version = "1", features = ["derive"] }
-
-# wasm
-[build]
-rustflags = '-C target-feature=+atomics,+bulk-memory'
-wasm-bindgen = { version = "0.2.74" }
-# Chrome build
-wasm-bindgen-rayon = "1.0"
-# Firefox build
-#wasm-bindgen-rayon = { version = "1.0", features = ["no-bundler"] }
-js-sys = { version = "0.3.35" }
-web-sys = { version = "0.3.35", features = ["console"] }
-console_error_panic_hook = { version = "0.1.6" }
 
 [dev-dependencies]
 criterion = "0.3"
@@ -51,6 +35,3 @@ harness = false
 default = ["parallel", "asm"]
 parallel = ["ark-ff/parallel", "ark-ec/parallel", "rayon", "ark-std/parallel"]
 asm = ["ark-ff/asm"]
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false
