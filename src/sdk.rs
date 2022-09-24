@@ -142,7 +142,7 @@ impl From<&Transcript> for TranscriptJSON {
     }
 }
 
-impl From<&TranscriptJSON> for Option<Transcript> {
+impl From<&TranscriptJSON> for Transcript {
     fn from(transcript_json: &TranscriptJSON) -> Self {
         // TODO: find a cleaner way to write this
         let sub_ceremonies_option: [Option<SRS>; NUM_CEREMONIES] = transcript_json
@@ -155,12 +155,11 @@ impl From<&TranscriptJSON> for Option<Transcript> {
         for optional_srs in sub_ceremonies_option {
             match optional_srs {
                 Some(srs) => sub_ceremonies.push(srs),
-                None => return None,
+                None => return Transcript::default(),
             }
         }
-
-        Some(Transcript {
+        Self {
             sub_ceremonies: sub_ceremonies.try_into().unwrap(),
-        })
+        }
     }
 }
