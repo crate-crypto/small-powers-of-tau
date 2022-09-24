@@ -19,15 +19,12 @@ rand = { version = "0.8.4" }
 getrandom = { version = "0.2", features = ["js"] }
 rayon = { version = "1.0", optional = true }
 itertools = "0.10.1"
-sha2 = "0.10.2"
 ark-ec = { version = "0.3", default-features = false }
-# ark-serialize = { version = "0.3", default-features = false }
-ark-poly = { version = "^0.3.0", default-features = false }
-ark-ff = { version = "^0.3.0", default-features = false }
-ark-bls12-381 = "^0.3.0"
-ark-std = "^0.3.0"
-zeroize = { version = "*", features = ["zeroize_derive"] }
-hex = "*"
+ark-ff = { version = "0.3.0", default-features = false }
+ark-bls12-381 = "0.3.0"
+ark-std = "0.3.0"
+zeroize = { version = "1.5.7", features = ["zeroize_derive"] }
+hex = "0.4.3"
 serde = { version = "1", features = ["derive"] }
 
 # wasm
@@ -52,13 +49,7 @@ harness = false
 
 [features]
 default = ["parallel", "asm"]
-parallel = [
-    "ark-ff/parallel",
-    "ark-poly/parallel",
-    "ark-ec/parallel",
-    "rayon",
-    "ark-std/parallel",
-]
+parallel = ["ark-ff/parallel", "ark-ec/parallel", "rayon", "ark-std/parallel"]
 asm = ["ark-ff/asm"]
 
 [package.metadata.wasm-pack.profile.release]
