@@ -1,5 +1,5 @@
 use ark_bls12_381::Fr;
-use ark_ff::{PrimeField, Zero};
+use ark_ff::PrimeField;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -69,5 +69,77 @@ pub fn contribution_subgroup_check(contribution: Contribution) -> bool {
     true
 }
 
-// TODO: keep copying functions from sdk/transcript.rs to here.
-// Change transcript by contribution and sub_ceremonies by contributions
+pub fn contribution_verify_update(
+    old_contribution: &Contribution,
+    new_contribution: &Contribution,
+    update_proofs: &[UpdateProof; NUM_CEREMONIES],
+    random_hex_elements: [String; NUM_CEREMONIES],
+) -> bool {
+    for i in 0..NUM_CEREMONIES {
+        // Decode random hex string into a field element
+        //
+        //
+        let hex_str = &random_hex_elements[i];
+        let hex_str = if let Some(stripped_random_hex) = hex_str.strip_prefix("0x") {
+            stripped_random_hex
+        } else {
+            return false;
+        };
+
+        let element = match hex::decode(hex_str) {
+            Ok(bytes) => Fr::from_be_bytes_mod_order(&bytes),
+            Err(_) => return false,
+        };
+
+        // Verify update
+        //
+        let proof = update_proofs[i];
+        let before = &old_contribution.contributions[i];
+        let after = &new_contribution.contributions[i];
+        if !SRS::verify_update(before, after, &proof, element) {
+            return false;
+        };
+    }
+
+    true
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ContributionJSON {
+    pub contributions: [SRSJson; NUM_CEREMONIES],
+}
+
+impl From<&Contribution> for ContributionJSON {
+    fn from(contribution: &Contribution) -> Self {
+        let contributions_json = contribution
+            .contributions
+            // TODO: can remove clone but will need to try_into for array size
+            .clone()
+            .map(|srs| SRSJson::from(&srs));
+        Self {
+            contributions: contributions_json,
+        }
+    }
+}
+
+impl From<&ContributionJSON> for Contribution {
+    fn from(contribution_json: &ContributionJSON) -> Self {
+        // TODO: find a cleaner way to write this
+        let contributions_option: [Option<SRS>; NUM_CEREMONIES] = contribution_json
+            .contributions
+            .clone()
+            .map(|srs_json| (&srs_json).into());
+
+        let mut contributions = Vec::new();
+
+        for optional_srs in contributions_option {
+            match optional_srs {
+                Some(srs) => contributions.push(srs),
+                None => return Contribution::default(),
+            }
+        }
+        Self {
+            contributions: contributions.try_into().unwrap(),
+        }
+    }
+}
