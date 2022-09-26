@@ -12,13 +12,13 @@ use crate::{
 
 
 pub struct Transcript {
-    pub sub_ceremonies: [SRS; NUM_CEREMONIES],
+    pub transcripts: [SRS; NUM_CEREMONIES],
 }
 
 impl Default for Transcript {
     fn default() -> Self {
         Transcript {
-            sub_ceremonies: [
+            transcripts: [
                 SRS::new(CEREMONIES[0]).unwrap(),
                 SRS::new(CEREMONIES[1]).unwrap(),
                 SRS::new(CEREMONIES[2]).unwrap(),
@@ -33,7 +33,7 @@ pub fn update_transcript(
     secrets: [String; NUM_CEREMONIES],
 ) -> Option<(Transcript, [UpdateProof; NUM_CEREMONIES])> {
     // Check that the parameters for each SRS is correct
-    for (srs, params) in transcript.sub_ceremonies.iter().zip(CEREMONIES.into_iter()) {
+    for (srs, params) in transcript.transcripts.iter().zip(CEREMONIES.into_iter()) {
         if srs.g1_elements().len() != params.num_g1_elements_needed {
             return None;
         }
@@ -49,7 +49,7 @@ pub fn update_transcript(
             let bytes = hex::decode(stripped_point_json).ok()?;
             let priv_key = PrivateKey::from_bytes(&bytes);
 
-            let update_proof = transcript.sub_ceremonies[i].update(priv_key);
+            let update_proof = transcript.transcripts[i].update(priv_key);
             update_proofs.push(update_proof);
         } else {
             return None;
@@ -62,7 +62,7 @@ pub fn update_transcript(
 }
 
 pub fn transcript_subgroup_check(transcript: Transcript) -> bool {
-    for srs in &transcript.sub_ceremonies {
+    for srs in &transcript.transcripts {
         if !srs.subgroup_check() {
             return false;
         }
@@ -95,8 +95,8 @@ pub fn transcript_verify_update(
         // Verify update
         //
         let proof = update_proofs[i];
-        let before = &old_transcript.sub_ceremonies[i];
-        let after = &new_transcript.sub_ceremonies[i];
+        let before = &old_transcript.transcripts[i];
+        let after = &new_transcript.transcripts[i];
         if !SRS::verify_update(before, after, &proof, element) {
             return false;
         };
@@ -107,18 +107,18 @@ pub fn transcript_verify_update(
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TranscriptJSON {
-    pub sub_ceremonies: [SRSJson; NUM_CEREMONIES],
+    pub transcripts: [SRSJson; NUM_CEREMONIES],
 }
 
 impl From<&Transcript> for TranscriptJSON {
     fn from(transcript: &Transcript) -> Self {
-        let sub_ceremonies_json = transcript
-            .sub_ceremonies
+        let transcripts_json = transcript
+            .transcripts
             // TODO: can remove clone but will need to try_into for array size
             .clone()
             .map(|srs| SRSJson::from(&srs));
         Self {
-            sub_ceremonies: sub_ceremonies_json,
+            transcripts: transcripts_json,
         }
     }
 }
@@ -126,21 +126,21 @@ impl From<&Transcript> for TranscriptJSON {
 impl From<&TranscriptJSON> for Transcript {
     fn from(transcript_json: &TranscriptJSON) -> Self {
         // TODO: find a cleaner way to write this
-        let sub_ceremonies_option: [Option<SRS>; NUM_CEREMONIES] = transcript_json
-            .sub_ceremonies
+        let transcripts_option: [Option<SRS>; NUM_CEREMONIES] = transcript_json
+            .transcripts
             .clone()
             .map(|srs_json| (&srs_json).into());
 
-        let mut sub_ceremonies = Vec::new();
+        let mut transcripts = Vec::new();
 
-        for optional_srs in sub_ceremonies_option {
+        for optional_srs in transcripts_option {
             match optional_srs {
-                Some(srs) => sub_ceremonies.push(srs),
+                Some(srs) => transcripts.push(srs),
                 None => return Transcript::default(),
             }
         }
         Self {
-            sub_ceremonies: sub_ceremonies.try_into().unwrap(),
+            transcripts: transcripts.try_into().unwrap(),
         }
     }
 }
