@@ -231,17 +231,21 @@ impl SRS {
             .collect_vec();
 
         // All elements in G1 except the last element
+        #[allow(non_snake_case)]
         let L = &self.tau_g1[0..len_g1 - 1];
         assert_eq!(L.len(), len_g1 - 1);
 
         // All elements in G1 except the first element
+        #[allow(non_snake_case)]
         let R = &self.tau_g1[1..];
         assert_eq!(R.len(), len_g1 - 1);
 
+        #[allow(non_snake_case)]
         let L_comm = VariableBaseMSM::multi_scalar_mul(
             &L.iter().map(|element| element.into_affine()).collect_vec(),
             &scalars,
         );
+        #[allow(non_snake_case)]
         let R_comm = VariableBaseMSM::multi_scalar_mul(
             &R.iter().map(|element| element.into_affine()).collect_vec(),
             &scalars,
@@ -256,17 +260,21 @@ impl SRS {
         // Check G2
 
         // All elements in G2 except the last element
+        #[allow(non_snake_case)]
         let L = &self.tau_g2[0..len_g2 - 1];
         assert_eq!(L.len(), len_g2 - 1);
 
         // All elements in G2 except the first element
+        #[allow(non_snake_case)]
         let R = &self.tau_g2[1..];
         assert_eq!(R.len(), len_g2 - 1);
 
+        #[allow(non_snake_case)]
         let L_comm = VariableBaseMSM::multi_scalar_mul(
             &L.iter().map(|element| element.into_affine()).collect_vec(),
             &scalars,
         );
+        #[allow(non_snake_case)]
         let R_comm = VariableBaseMSM::multi_scalar_mul(
             &R.iter().map(|element| element.into_affine()).collect_vec(),
             &scalars,

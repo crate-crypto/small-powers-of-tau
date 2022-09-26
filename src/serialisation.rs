@@ -141,6 +141,14 @@ pub struct SRSJson {
     num_g1_powers: usize,
     #[serde(rename = "numG2Powers")]
     num_g2_powers: usize,
+    #[serde(rename = "powersOfTau")]
+    powers_of_tau: PowerOfTau,
+    #[serde(rename = "potPubkey")]
+    pot_pubkey: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PowerOfTau {
     #[serde(rename = "G1Powers")]
     g1_powers: Vec<String>,
     #[serde(rename = "G2Powers")]
@@ -155,8 +163,11 @@ impl From<&SRS> for SRSJson {
         Self {
             num_g1_powers: g1s.len(),
             num_g2_powers: g2s.len(),
-            g1_powers: SRS::g1s_to_json_array(g1s),
-            g2_powers: SRS::g2s_to_json_array(g2s),
+            powers_of_tau: PowerOfTau {
+                g1_powers: SRS::g1s_to_json_array(g1s),
+                g2_powers: SRS::g2s_to_json_array(g2s)
+            },
+            pot_pubkey: SRS::g2s_to_json_array(g2s).get(0).unwrap().to_string(),
         }
     }
 }
@@ -166,7 +177,10 @@ impl From<&SRSJson> for Option<SRS> {
             num_g1_elements_needed: srs.num_g1_powers,
             num_g2_elements_needed: srs.num_g2_powers,
         };
-        SRS::deserialise((&srs.g1_powers, &srs.g2_powers), parameters)
+        SRS::deserialise(
+            (&srs.powers_of_tau.g1_powers, &srs.powers_of_tau.g2_powers),
+            parameters,
+        )
     }
 }
 #[cfg(test)]
