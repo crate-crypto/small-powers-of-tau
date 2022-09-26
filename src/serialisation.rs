@@ -143,6 +143,8 @@ pub struct SRSJson {
     num_g2_powers: usize,
     #[serde(rename = "powersOfTau")]
     powers_of_tau: PowerOfTau,
+    #[serde(rename = "potPubkey")]
+    pot_pubkey: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -165,6 +167,7 @@ impl From<&SRS> for SRSJson {
                 g1_powers: SRS::g1s_to_json_array(g1s),
                 g2_powers: SRS::g2s_to_json_array(g2s)
             },
+            pot_pubkey: SRS::g2s_to_json_array(g2s).get(0).unwrap().to_string(),
         }
     }
 }
