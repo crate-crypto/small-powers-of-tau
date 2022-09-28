@@ -1,8 +1,7 @@
 # Small Powers of Tau
 
-**This code has not been audited. Use at your own risk.**
 
-This implementation aims to target small non-Groth16 powers of tau ceremonies.
+This implementation aims to target small non-Groth16 powers of tau ceremonies. The code was audited by SECBIT Labs on September 20th, 2022. Checkout the report here: [https://github.com/ethereum/kzg-ceremony/blob/main/KZG10-Ceremony-audit-report.pdf]()
 
 ## Performance
 
@@ -29,19 +28,19 @@ In order to contribute to a ceremony, you need to:
     };
 
     let bytes = // Assuming you received the most recent SRS as a bytes
-    
+
     // Deserialise the bytes received to create the SRS
     // This method will ensure that the first points is in the correct group and that none of the points are zero
     let mut srs = SRS::deserialise(bytes, params);
 
     // Save the old SRS as we will do subgroup checks on it, after
-    // since we assume that the Coordinator is honest. 
+    // since we assume that the Coordinator is honest.
     let old_srs = srs.clone();
 
     // Create your private key
     let private_key = PrivateKey::rand(rng);
 
-    // Update the SRS creating an update proof 
+    // Update the SRS creating an update proof
     let update_proof = srs.update(private_key);
 
     // Send the SRS and update proof to the appropriate party
@@ -117,7 +116,7 @@ These are the actors who want to either check that their contributions were incl
     // If position is None/Nil then your contribution was not included. Else the position of your contribution will be returned.
 ````
 
-## License 
+## License
 
 This project is distributed under a dual license. (MIT/APACHE)
 
