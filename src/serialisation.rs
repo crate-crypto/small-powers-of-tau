@@ -165,9 +165,9 @@ impl From<&SRS> for SRSJson {
             num_g2_powers: g2s.len(),
             powers_of_tau: PowerOfTau {
                 g1_powers: SRS::g1s_to_json_array(g1s),
-                g2_powers: SRS::g2s_to_json_array(g2s)
+                g2_powers: SRS::g2s_to_json_array(g2s),
             },
-            pot_pubkey: SRS::g2s_to_json_array(g2s).get(0).unwrap().to_string(),
+            pot_pubkey: SRS::g2s_to_json_array(g2s).get(1).unwrap().to_string(),
         }
     }
 }
